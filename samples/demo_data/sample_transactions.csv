@@ -1,0 +1,11 @@
+id,date,description,amount,currency,source,reference,user_id
+tx-0001,2025-10-01,Sale - Retail Customer A,12500.00,INR,manual,INV-1001,user-demo
+tx-0002,2025-10-02,Purchase - Office Supplies,2300.50,INR,manual,PO-2001,user-demo
+tx-0003,2025-10-03,Electricity Bill September,4800.00,INR,manual,BILL-ELEC-09,user-demo
+tx-0004,2025-10-05,Sale - Online Order B,7899.99,INR,invoice_upload,INV-1002,user-demo
+tx-0005,2025-10-07,Salary - October (Staff),18000.00,INR,manual,SAL-2025-10,user-demo
+tx-0006,2025-10-10,Payment Received - Customer C,4500.00,INR,bank_import,RECEIPT-3001,user-demo
+tx-0007,2025-10-12,Internet Bill October,999.00,INR,manual,BILL-INT-10,user-demo
+tx-0008,2025-10-15,Purchase - Raw Materials,10250.75,INR,manual,PO-2002,user-demo
+tx-0009,2025-10-20,Refund Issued - Order #INV-1002,-7899.99,INR,manual,REF-1002,user-demo
+tx-0010,2025-10-25,Sale - Wholesale Client D,56000.00,INR,invoice_upload,INV-1003,user-demo
