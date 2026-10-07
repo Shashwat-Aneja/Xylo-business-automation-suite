@@ -13,6 +13,7 @@ For production:
 - Replace smtplib with transactional email (SendGrid, SES, Mailgun)
 """
 
+import os
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -24,8 +25,8 @@ from typing import Optional, List
 # ------------------------------------------------------------
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465  # SSL
-SMTP_USERNAME = "your-email@gmail.com"  # placeholder
-SMTP_PASSWORD = "your-app-password"     # placeholder
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 
 SENDER_NAME = "XYLO Automation"
 SENDER_EMAIL = SMTP_USERNAME
