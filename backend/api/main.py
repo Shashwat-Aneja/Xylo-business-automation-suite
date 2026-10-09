@@ -14,6 +14,7 @@ Replace stub logic with real module calls (accounting_engine, automation, ai_cha
 """
 
 from datetime import datetime, timezone
+import math
 import uuid
 from typing import Optional, Any, Dict
 
@@ -102,6 +103,8 @@ def me():
 # -------------------------
 @app.post("/accounting/add_transaction", response_model=GenericResponse)
 def add_transaction(tx: TransactionCreate):
+    if not math.isfinite(tx.amount):
+        raise HTTPException(status_code=422, detail="Transaction amount must be a finite number.")
     tx_id = str(uuid.uuid4())
     DEMO_TRANSACTIONS[tx_id] = tx.dict()
     # In real system: call accounting_engine.create_journal_entries(...)
