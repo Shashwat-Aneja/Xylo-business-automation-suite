@@ -15,11 +15,12 @@ Replace stub logic with real module calls (accounting_engine, automation, ai_cha
 
 from datetime import datetime, timezone
 import math
+import re
 import uuid
 from typing import Optional, Any, Dict
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 
 app = FastAPI(title="XYLO API", version="0.1.0")
 
@@ -49,6 +50,13 @@ class TransactionCreate(BaseModel):
     currency: str = "INR"
     description: Optional[str] = None
     source: Optional[str] = "manual"  # e.g., invoice_upload, bank_import
+
+    @validator("currency")
+    def validate_currency(cls, value: str) -> str:
+        currency = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", currency):
+            raise ValueError("Currency must be a three-letter code, such as INR or USD.")
+        return currency
 
 
 class GenericResponse(BaseModel):
