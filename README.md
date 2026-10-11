@@ -180,3 +180,7 @@ Tasks executed:
 - Improve OCR accuracy  
 - Build a full dashboard UI  
 - Deploy a public demo
+
+## Transaction currency validation
+
+The transaction API accepts three-letter currency codes and normalizes them to uppercase (for example, `usd` becomes `USD`). Values that are not exactly three ASCII letters are rejected by request validation. The default currency is `INR`.
