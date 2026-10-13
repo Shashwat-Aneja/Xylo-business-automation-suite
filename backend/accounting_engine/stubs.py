@@ -14,6 +14,7 @@ for production use.
 """
 
 import math
+import math
 import sqlite3
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
@@ -153,6 +154,8 @@ def create_transaction(user_id: Optional[str], amount: float, description: str, 
     """
     Create a raw transaction record (source). Returns transaction_id.
     """
+    if not math.isfinite(float(amount)):
+        raise ValueError("Transaction amount must be a finite number.")
     if not math.isfinite(float(amount)):
         raise ValueError("Transaction amount must be a finite number.")
     _ensure_schema()
