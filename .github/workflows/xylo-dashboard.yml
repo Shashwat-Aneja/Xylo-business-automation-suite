@@ -1,0 +1,33 @@
+name: Xylo dashboard build
+
+on:
+  push:
+    branches:
+      - feature/xylo-foundation
+    paths:
+      - "frontend/dashboard/**"
+      - ".github/workflows/xylo-dashboard.yml"
+  pull_request:
+    paths:
+      - "frontend/dashboard/**"
+      - ".github/workflows/xylo-dashboard.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/dashboard
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/dashboard/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Type-check and build
+        run: npm run build
