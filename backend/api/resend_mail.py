@@ -13,6 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 RESEND_EMAILS_URL = "https://api.resend.com/emails"
+_SENDER_RE = re.compile(r"^(?:[^<>]*<)?([^<>\\s@]+@[^<>\\s@]+\\.[^<>\\s@]+)>?$")
 _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
