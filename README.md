@@ -1,186 +1,42 @@
-# XYLO – AI-Powered Business Automation System  
-### Intelligent finance automation · OCR · Accounting engine · FastAPI backend
+# Xylo — Bookkeeping and business operations
 
-XYLO is an AI-assisted backend automation system built to simplify bookkeeping, invoices, reporting, reminders, and financial insights for small businesses.  
-It is designed with a clean modular FastAPI backend and structured like a lightweight ERP system.
+Xylo is a bookkeeping and business-operations workspace for sole proprietors and small businesses. The product direction is a clear, carefully designed, international-ready accounting experience with **no AI features**.
 
----
+## Product priorities
 
-## ⭐ Key Features
+- Secure business workspaces with Supabase Auth and row-level security.
+- A dependable transaction register, invoices, bills, payment tracking, reconciliation, and financial reports.
+- Double-entry accounting with auditable posting and correction workflows.
+- Explicit currency, locale, time zone, and fiscal-year settings.
+- Human-designed editorial interface: warm paper and ivory surfaces, ink typography, terracotta accents, fine dividers, and generous whitespace.
 
-### 📄 Invoice OCR
-- Upload invoices (PDF/image)  
-- Extract vendor, date, amount  
-- Auto-create transactions  
-- Auto-post journal entries  
+## Planned stack
 
-### 💬 AI Chat Assistant
-Ask natural questions like:
-- “Show my expenses this month”  
-- “Generate my daily summary”  
-- “Has invoice #102 been paid?”
+- **Frontend:** React + TypeScript + Vite + Tailwind CSS
+- **API:** Node.js + Express
+- **Database and identity:** Supabase PostgreSQL + Supabase Auth + RLS
+- **Hosting and delivery:** Vercel previews, GitHub feature branches
 
-(ML-powered assistant planned)
+## Current implementation status
 
-### 📊 Financial Report Generator
-Generates:
-- Trial Balance  
-- Profit & Loss  
-- Balance Sheet  
-- Daily Summary  
+This repository is transitioning from an earlier backend prototype into the current Xylo product. The auth, workspace, and transaction-register screens currently include static HTML prototypes. The transaction register uses in-memory sample data and is **not yet connected to the production database**. Do not use it to record real financial data.
 
-Formats supported: **PDF, CSV, JSON**
+Database foundation currently includes `profiles` and `businesses`, with owner-scoped RLS policies and profile creation on signup. Email confirmation redirects and the Resend/Supabase SMTP setup still require end-to-end verification.
 
-### ⚙ Automation Scheduler
-- Daily summary reports  
-- Weekly database backup  
-- Overdue payment reminders  
-- Interval-based tasks  
+## Preview screens
 
-### 📘 Accounting Engine
-- Double-entry bookkeeping  
-- Ledger system  
-- Chart of accounts  
-- Journal entries  
-- Reconciliation checks  
+- Auth: `/auth-experience/`
+- Workspace onboarding: `/dashboard/`
+- Transaction register prototype: `/transactions/`
 
-### 🚀 FastAPI Backend
-- Modular routes  
-- Adapter-based architecture  
-- Clean utilities for PDF/OCR  
-- Swagger API documentation  
+## Architecture and delivery plan
 
----
+See [Xylo product architecture](docs/xylo-product-architecture.md) for the product principles, locked design system, proposed domain model, accounting invariants, API conventions, and phased implementation plan.
 
-## 🧩 System Architecture
+## Development principles
 
-```
-XYLO/
-│
-├── backend/
-│   ├── api/                 # FastAPI routes & controllers
-│   ├── accounting_engine/   # Journals, ledgers, validation
-│   ├── automation/          # Scheduler, reminders, invoice pipeline
-│   ├── utils/               # PDF generator, CSV tools, helpers
-│   └── database/            # SQLite models (future ORM)
-│
-├── docs/                    # Architecture + development docs
-├── samples/                 # Demo invoices + generated reports
-└── frontend/                # Future dashboard UI
-```
-
----
-
-## 📦 Installation
-
-### 1. Clone
-```bash
-git clone https://github.com/Shashwat-Aneja/xylo
-cd xylo
-```
-
-### 2. Create a Virtual Environment
-**Windows**
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-**Mac/Linux**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-```bash
-pip install fastapi uvicorn reportlab python-dotenv
-```
-
-**Optional OCR support**
-```bash
-pip install pytesseract pillow
-```
-
----
-
-## ▶️ Running the Server
-```bash
-uvicorn backend.api.main:app --reload
-```
-
-Open API docs:  
-http://127.0.0.1:8000/docs
-
----
-
-## 🧪 Testing Core Features
-
-### 1. Add Transaction
-```bash
-curl -X POST http://127.0.0.1:8000/accounting/add_transaction \
--H "Content-Type: application/json" \
--d "{\"date\":\"2025-01-01T00:00:00\",\"amount\":1200,\"description\":\"Test Sale\"}"
-```
-
-### 2. Generate Trial Balance  
-```
-GET /accounting/trial_balance
-```
-
-### 3. Upload Invoice  
-```
-POST /invoices/upload
-```
-
-### 4. AI Chat Assistant  
-```
-POST /chatbot/message
-```
-
----
-
-## 📊 Example Trial Balance Output
-```json
-{
-  "assets": 1200,
-  "liabilities": 0,
-  "equity": 0,
-  "difference": 1200
-}
-```
-
----
-
-## ⚙ Automation Scheduler
-Run automation tasks:
-
-```bash
-python backend/automation/scheduler.py
-```
-
-Tasks executed:
-- Daily 10 PM summary  
-- Weekly backup  
-- Overdue reminders  
-
----
-
-## 📘 Documentation
-- `/docs/architecture/` — System diagrams  
-- `/docs/dev_setup.md` — Development setup  
-- `/docs/frontend/` — Dashboard planning  
-- `/docs/automation/` — Task workflows  
-
----
-
-## 🎯 Project Goals
-- Real-world financial automation  
-- Add ML-based assistant  
-- Improve OCR accuracy  
-- Build a full dashboard UI  
-- Deploy a public demo
-
-## Transaction currency validation
-
-The transaction API accepts three-letter currency codes and normalizes them to uppercase (for example, `usd` becomes `USD`). Values that are not exactly three ASCII letters are rejected by request validation. The default currency is `INR`.
+1. Keep unfinished work on feature branches and preview deployments; do not silently promote it to production.
+2. Never expose Supabase service-role credentials or Resend API keys in browser code, repository files, or chat.
+3. Enforce workspace ownership in database RLS and server authorization—not only in the UI.
+4. Treat money with exact decimal or integer minor-unit representations; avoid binary floating-point persistence.
+5. Test authorization isolation, balanced journal entries, currency handling, and error states before production use.
