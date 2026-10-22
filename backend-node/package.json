@@ -1,0 +1,14 @@
+{
+  "name": "xylo-transactional-mail",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  }
+}
