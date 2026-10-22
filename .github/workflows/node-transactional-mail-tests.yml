@@ -1,0 +1,29 @@
+name: Node transactional mail tests
+
+on:
+  push:
+    branches:
+      - feature/xylo-node-resend-integration
+  pull_request:
+    branches:
+      - feature/xylo-node-resend-integration
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend-node/package.json
+      - name: Install dependencies
+        working-directory: backend-node
+        run: npm install --package-lock-only && npm install
+      - name: Run unit tests
+        working-directory: backend-node
+        run: npm test
