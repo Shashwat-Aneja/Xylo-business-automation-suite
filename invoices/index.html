@@ -73,6 +73,60 @@
 .paper.botanical .preview-table th{background:#e8efe4;color:#405b3f;border-bottom:1px solid #cad7c5}
 .paper.botanical .totals .grand{border-color:#647b61;color:#405b3f}
 
+
+/* Template cards now preview the same visual language used by the invoice sheet */
+.thumb{position:relative;overflow:hidden}
+.thumb:after{content:"";display:block;height:1px;background:#e6e0d6;margin-top:2px}
+.thumb-modern{border:0;border-top:5px solid #315f52;background:#f8fbf9;padding:7px}
+.thumb-modern .bar{height:11px;width:42%;background:#315f52}
+.thumb-modern .table-lines{border-color:#cddbd4;background:repeating-linear-gradient(to bottom,transparent 0 8px,#dce7e1 8px 9px)}
+.thumb-ledger{background:#fbfbf7;border-color:#d8d9cd}
+.thumb-ledger .bar{width:100%;height:3px;background:#74745d}
+.thumb-ledger .table-lines{border-color:#b9bba9;background:repeating-linear-gradient(to bottom,transparent 0 8px,#e2e3d8 8px 9px)}
+.thumb-mono{border:1px solid #222;background:white}
+.thumb-mono .bar{width:100%;height:2px;background:#222}
+.thumb-mono .line,.thumb-mono .table-lines{background:repeating-linear-gradient(to bottom,transparent 0 8px,#ddd 8px 9px)}
+.thumb-studio{background:#fff7f2;border:0;padding:7px}
+.thumb-studio .bar{height:16px;width:35%;background:#b65c45}
+.thumb-studio .line{background:#ecd5cb}
+.thumb-corporate{background:#f8fafc;border-color:#c9d3df}
+.thumb-corporate .bar{width:100%;height:4px;background:#294b70}
+.thumb-corporate .table-lines{background:repeating-linear-gradient(to bottom,transparent 0 8px,#dbe3ed 8px 9px)}
+.thumb-elegant{background:#fffdfd;border-color:#eadce0}
+.thumb-elegant .bar{width:38%;height:2px;align-self:center;background:#986b78}
+.thumb-elegant .line{align-self:center;width:65%;background:#eadce0}
+.thumb-bold{background:#f8faf8;border:0}
+.thumb-bold .bar{width:100%;height:18px;background:#1e3d35}
+.thumb-bold .line{background:#d5e0d9}
+.thumb-minimal{background:white;border:0;padding:7px}
+.thumb-minimal .bar{width:25%;height:1px;background:#a6a39a}
+.thumb-minimal .line{height:2px;background:#ecebe7}
+.thumb-botanical{background:#fafcf8;border-color:#d5dfd1}
+.thumb-botanical .bar{width:50%;height:9px;background:#647b61}
+.thumb-botanical .table-lines{background:repeating-linear-gradient(to bottom,transparent 0 8px,#dce6d8 8px 9px)}
+/* Stronger composition differences in the full-size live preview */
+.paper.modern .meta>div,.paper.corporate .meta>div{min-width:0}
+.paper.modern .preview-table th{background:#315f52;color:white;border:0;padding:10px 5px}
+.paper.modern .preview-table td{padding:12px 5px;border-bottom:1px solid #dce7e1}
+.paper.modern .totals .grand{background:#e8f0ec;padding:10px;color:#24483e}
+.paper.ledger .brand{display:grid;grid-template-columns:1fr auto;align-items:end}
+.paper.ledger .doc-label{border-left:1px solid #c9cbb8;padding-left:12px}
+.paper.ledger .meta{border-block:1px solid #d6d7ca;padding:12px 0}
+.paper.ledger .totals .grand{background:#eff0e8;padding:9px;color:#555744}
+.paper.studio .preview-table th{background:#b65c45;color:white;border:0;padding:10px 5px}
+.paper.studio .preview-table td{border-bottom:1px solid #ecd5cb;padding:12px 5px}
+.paper.studio .paper-foot{border-color:#e8cfc4}
+.paper.corporate .totals .grand{background:#edf2f7;padding:10px;color:#294b70}
+.paper.elegant .preview-table th{border-bottom:1px solid #986b78;color:#986b78}
+.paper.elegant .preview-table td{border-bottom:1px solid #f0e5e8}
+.paper.elegant .bottom{border-top:1px solid #eadce0;padding-top:15px}
+.paper.bold .meta{border-top:1px solid #cbd8d0;border-bottom:1px solid #cbd8d0;padding:12px 0}
+.paper.bold .preview-table td{border-bottom:1px solid #dce5df;padding:12px 5px}
+.paper.minimal .meta strong{font-size:7px;letter-spacing:.18em}
+.paper.minimal .preview-table th{letter-spacing:.14em}
+.paper.botanical .preview-table td{border-bottom:1px solid #dce6d8;padding:11px 4px}
+.paper.botanical .totals .grand{background:#edf3e9;padding:10px}
+
 @media(max-width:1050px){.app{grid-template-columns:180px minmax(0,1fr)}.layout{grid-template-columns:1fr}.preview-wrap{position:static}.paper{max-width:700px}.preview-wrap .panel{background:transparent;border:0;padding:0}.preview-wrap .panel-head{display:none}}@media(max-width:650px){.app{display:block}aside{min-height:0;border-right:0;border-bottom:1px solid var(--line);padding:12px 18px}.logo{font-size:34px}.nav{display:flex;overflow:auto;margin:10px -4px 0;gap:3px}.nav a{white-space:nowrap;padding:8px;font-size:10px}.aside-foot{display:none}.main{padding:18px 12px}.head{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions .btn{flex:1}.templates{gap:6px}.template{padding:5px}.template strong{font-size:9px}.template small{font-size:8px}.two{grid-template-columns:1fr;gap:0}.items-head,.item{grid-template-columns:minmax(0,1fr) 42px 58px 64px 16px;gap:4px}.item input{font-size:9px;padding:7px 3px}.totals-input{grid-template-columns:1fr 1fr}.paper{padding:18px 12px;min-height:0}.brand h3{font-size:23px}.bottom{grid-template-columns:1fr}.totals{max-width:200px;justify-self:end;width:100%}.footer{flex-wrap:wrap}}@media print{body{background:white}.app>aside,.head,.steps,.editor,.preview-head,.drafts,.footer{display:none!important}.app{display:block}.main{padding:0;max-width:none}.layout{display:block}.preview-wrap .panel{border:0;padding:0;background:white}.paper{box-shadow:none;border:0;max-width:none;min-height:0;padding:24px}.paper:before{height:4px}@page{size:A4;margin:14mm}}
 </style></head><body>
 <div class="app"><aside><div class="logo">Xylo<span>.</span></div><nav class="nav"><a href="/dashboard/">Overview</a><a href="/transactions/">Transactions</a><a class="active" href="/invoices/">Invoices</a><a href="/reports/">Reports</a><a href="/dashboard/#businesses">Business settings</a><a href="/dashboard/#profile">Your profile</a></nav><div class="aside-foot">A calmer way to keep business in balance.</div></aside>
