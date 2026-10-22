@@ -43,7 +43,7 @@ def send_transactional_email(
 
     if not api_key:
         raise ResendConfigurationError("RESEND_API_KEY is not configured.")
-    if not from_email or not _EMAIL_RE.fullmatch(from_email):
+    if not from_email or not _SENDER_RE.fullmatch(from_email):
         raise ResendConfigurationError(
             "RESEND_FROM_EMAIL must be a valid address on a verified sending domain."
         )
