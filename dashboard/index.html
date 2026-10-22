@@ -117,7 +117,7 @@ function clearNotice(){$('notice').textContent='';$('notice').classList.remove('
 function escapeHtml(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderBusinesses(){$('business-list').innerHTML=businesses.length?businesses.map(b=>'<article class="business"><div><h3>'+escapeHtml(b.display_name)+'</h3><p>'+escapeHtml(b.legal_name||'Business workspace')+'<br>'+escapeHtml(b.country_code)+' · '+escapeHtml(b.base_currency)+' · '+escapeHtml(b.accounting_basis)+' basis</p></div><span class="pill">'+escapeHtml(b.timezone)+'</span></article>').join(''):'<div class="empty">No business workspace yet. Use the form to create your first one.</div>';$('business-count').textContent=businesses.length===1?'1 business workspace':businesses.length+' business workspaces';$('business-label').textContent=businesses.length+' saved';$('business-form').hidden=businesses.length>0}
 async function withTimeout(promise,label,ms=12000){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out. Please refresh and try again.')),ms)})])}finally{clearTimeout(timer)}}
-async function load(){const {data:{session},error:sessionError}=await withTimeout(supabase.auth.getSession(),'Checking your sign-in session');if(sessionError)throw sessionError;if(!session){const pendingEmail=sessionStorage.getItem('xylo_pending_verification_email');if(pendingEmail){$('loading').hidden=true;$('pending-verification').hidden=false;$('pending-email').textContent=pendingEmail;$('side-user').textContent='Email confirmation pending';$('signout').textContent='Back to sign in ↗';$('signout').addEventListener('click',()=>location.replace('/auth-experience/'));$('connection-status').textContent='Email confirmation required';return}location.replace('/auth-experience/');return}sessionStorage.removeItem('xylo_pending_verification_email');$('pending-verification').hidden=true;currentUser=session.user;$('side-user').textContent=currentUser.email||'Signed-in account';$('profile-email').textContent=currentUser.email||'';const [profileResult,businessResult]=await withTimeout(Promise.all([supabase.from('profiles').select('user_id,full_name,preferred_name,locale,timezone,onboarding_completed,created_at').eq('user_id',currentUser.id).maybeSingle(),supabase.from('businesses').select('id,owner_id,legal_name,display_name,country_code,base_currency,timezone,fiscal_year_start_month,accounting_basis,created_at').eq('owner_id',currentUser.id).order('created_at',{ascending:true})]),'Loading profile and business data');if(profileResult.error)throw profileResult.error;if(businessResult.error)throw businessResult.error;profile=profileResult.data;businesses=businessResult.data||[];const meta=currentUser.user_metadata||{};const full=profile?.full_name||meta.full_name||meta.name||currentUser.email?.split('@')[0]||'there';const first=(profile?.preferred_name||full).trim().split(/\s+/)[0];$('greeting').innerHTML='Good to have you<br><em>'+escapeHtml(first)+'.</em>';$('profile-name').textContent=full;$('profile-full-name').value=profile?.full_name||meta.full_name||meta.name||'';$('profile-preferred-name').value=profile?.preferred_name||'';$('profile-locale').value=profile?.locale||'en';$('profile-timezone').value=profile?.timezone||'Asia/Kolkata';$('profile-email-readonly').value=currentUser.email||'';setAvatar(await resolveAsset(meta.avatar_path)||meta.avatar_url||meta.picture||meta.photo_url||'');renderBusinessLogo(await resolveAsset(meta.business_logo_path)||meta.business_logo_url||'');setEmailVerification(!!currentUser.email_confirmed_at);$('today').textContent=new Intl.DateTimeFormat(profile?.locale||'en',{weekday:'short',month:'long',day:'numeric',year:'numeric'}).format(new Date());$('loading').hidden=true;$('content').hidden=false;renderBusinesses();$('connection-status').textContent='Database connected'}
+async function load(){const {data:{session},error:sessionError}=await withTimeout(supabase.auth.getSession(),'Checking your sign-in session');if(sessionError)throw sessionError;if(!session){const pendingEmail=sessionStorage.getItem('xylo_pending_verification_email');if(pendingEmail){$('loading').hidden=true;$('pending-verification').hidden=false;$('pending-email').textContent=pendingEmail;$('side-user').textContent='Email confirmation pending';$('signout').textContent='Back to sign in ↗';$('signout').addEventListener('click',()=>location.replace('/auth-experience/'));$('connection-status').textContent='Email confirmation required';return}location.replace('/auth-experience/');return}sessionStorage.removeItem('xylo_pending_verification_email');$('pending-verification').hidden=true;currentUser=session.user;$('side-user').textContent=currentUser.email||'Signed-in account';$('profile-email').textContent=currentUser.email||'';const [profileResult,businessResult]=await withTimeout(Promise.all([supabase.from('profiles').select('user_id,full_name,preferred_name,locale,timezone,onboarding_completed,created_at').eq('user_id',currentUser.id).maybeSingle(),supabase.from('businesses').select('id,owner_id,legal_name,display_name,country_code,base_currency,timezone,fiscal_year_start_month,accounting_basis,created_at').eq('owner_id',currentUser.id).order('created_at',{ascending:true})]),'Loading profile and business data');if(profileResult.error)throw profileResult.error;if(businessResult.error)throw businessResult.error;profile=profileResult.data;businesses=businessResult.data||[];const meta=currentUser.user_metadata||{};const full=profile?.full_name||meta.full_name||meta.name||currentUser.email?.split('@')[0]||'there';const first=(profile?.preferred_name||full).trim().split(/\s+/)[0];$('greeting').innerHTML='Good to have you<br><em>'+escapeHtml(first)+'.</em>';$('profile-name').textContent=full;$('profile-full-name').value=profile?.full_name||meta.full_name||meta.name||'';$('profile-preferred-name').value=profile?.preferred_name||'';$('profile-locale').value=profile?.locale||'en';$('profile-timezone').value=profile?.timezone||'Asia/Kolkata';$('profile-email-readonly').value=currentUser.email||'';setAvatar(await resolveAsset(meta.avatar_path)||meta.avatar_url||meta.picture||meta.photo_url||'');renderBusinessLogo(await resolveAsset(meta.business_logo_path)||meta.business_logo_url||'');setEmailVerification(!!currentUser.email_confirmed_at);$('today').textContent=new Intl.DateTimeFormat(profile?.locale||'en',{weekday:'short',month:'long',day:'numeric',year:'numeric'}).format(new Date());$('loading').hidden=true;$('content').hidden=false;renderBusinesses();await initAccounting();$('connection-status').textContent='Database connected'}
 $('business-form').addEventListener('submit',async e=>{e.preventDefault();clearNotice();const display_name=$('display-name').value.trim();if(!display_name){notice('Enter a business display name.');return}const btn=$('create-business');btn.disabled=true;try{const payload={owner_id:currentUser.id,display_name,legal_name:$('legal-name').value.trim()||null,country_code:$('country').value==='OTHER'?'ZZ':$('country').value,base_currency:$('currency').value,timezone:$('timezone').value,accounting_basis:$('basis').value,fiscal_year_start_month:Number($('fiscal-month').value)};const {data,error}=await supabase.from('businesses').insert(payload).select('id,owner_id,legal_name,display_name,country_code,base_currency,timezone,fiscal_year_start_month,accounting_basis,created_at').single();if(error)throw error;businesses.push(data);renderBusinesses();notice('Business workspace saved to your database. You can change these settings later.')}catch(err){notice(err?.message||'Could not create the workspace. Please retry.')}finally{btn.disabled=false}});
 function setAvatar(url){const img=$('profile-avatar'),fallback=$('avatar-fallback'),sideImg=$('sidebar-avatar'),sideFallback=$('sidebar-avatar-fallback');if(url){img.onerror=()=>{img.hidden=true;fallback.hidden=false};img.onload=()=>{img.hidden=false;fallback.hidden=true};img.src=url;sideImg.onerror=()=>{sideImg.hidden=true;sideFallback.hidden=false};sideImg.onload=()=>{sideImg.hidden=false;sideFallback.hidden=true};sideImg.src=url}else{img.onerror=null;img.removeAttribute('src');img.hidden=true;fallback.hidden=false;sideImg.onerror=null;sideImg.removeAttribute('src');sideImg.hidden=true;sideFallback.hidden=false}}
 function renderBusinessLogo(url){const el=$('business-logo-preview');el.replaceChildren();if(!url){const placeholder=document.createElement('span');placeholder.textContent='LOGO';el.append(placeholder);return}const img=document.createElement('img');img.alt='Business logo';img.onload=()=>{img.dataset.loaded='true'};img.onerror=()=>{el.replaceChildren();const placeholder=document.createElement('span');placeholder.textContent='Logo could not load — upload again';el.append(placeholder);console.warn('Business logo preview failed to load')};img.src=url;el.append(img)}
@@ -134,6 +134,155 @@ $('signout').addEventListener('click',async()=>{const b=$('signout');b.disabled=
 function verificationMessage(text){$('verify-status').textContent=text;$('verify-status').classList.add('show')}
 $('resend-verification').addEventListener('click',async()=>{const email=sessionStorage.getItem('xylo_pending_verification_email');if(!email){verificationMessage('Return to sign in and enter your email address again.');return}const btn=$('resend-verification');btn.disabled=true;try{const {error}=await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+'/dashboard/'}});if(error)throw error;verificationMessage('If this account can receive a confirmation email, Supabase has sent a new message. Check your inbox and spam folder.')}catch(err){verificationMessage(err?.message||'We could not resend the email. Please try again.')}finally{btn.disabled=false}});
 $('back-to-signin').addEventListener('click',()=>location.replace('/auth-experience/'));
+
+
+let acctBusinessId=null,acctAccounts=[],acctEntries=[],acctLines=[],acctItems=[];
+const acctStarterAccounts=[
+ ['1000','Cash on hand','asset','debit'],['1010','Bank account','asset','debit'],['1100','Accounts receivable','asset','debit'],
+ ['1200','Inventory','asset','debit'],['1500','Equipment','asset','debit'],['2000','Accounts payable','liability','credit'],
+ ['2100','Tax payable','liability','credit'],['2200','Loans payable','liability','credit'],['3000',"Owner's capital",'equity','credit'],
+ ['3100',"Owner's drawings",'equity','debit'],['4000','Sales revenue','income','credit'],['4100','Service revenue','income','credit'],
+ ['5000','Cost of goods sold','expense','debit'],['5100','Rent expense','expense','debit'],['5200','Utilities expense','expense','debit'],
+ ['5300','Salaries expense','expense','debit'],['5400','Office and supplies expense','expense','debit'],['5500','Other expenses','expense','debit']
+];
+const acctMoney=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:businesses.find(b=>b.id===acctBusinessId)?.base_currency||'INR',maximumFractionDigits:2}).format(Number(n)||0);
+const acctEscape=s=>escapeHtml(s??'');
+function acctMessage(id,msg){const el=$(id);if(el)el.textContent=msg}
+async function initAccounting(){
+ const nav=$('accounting-nav');nav?.addEventListener('click',e=>{e.preventDefault();showAccountingPage(true)});
+ document.querySelectorAll('[data-accounting-tab]').forEach(btn=>btn.addEventListener('click',()=>showAccountingPanel(btn.dataset.accountingTab)));
+ $('accounting-business').addEventListener('change',async e=>{acctBusinessId=e.target.value;await loadAccountingData()});
+ $('acct-new-journal').addEventListener('click',()=>{const wrap=$('acct-journal-form-wrap');wrap.hidden=!wrap.hidden;if(!wrap.hidden){$('acct-entry-date').value=new Date().toISOString().slice(0,10);if(!$('acct-journal-lines').children.length){addAccountingLine();addAccountingLine()}}});
+ $('acct-add-line').addEventListener('click',addAccountingLine);
+ $('acct-journal-form').addEventListener('submit',saveAccountingJournal);
+ $('acct-ledger-account').addEventListener('change',renderAccountingLedger);
+ $('acct-export-trial').addEventListener('click',()=>exportAccountingTable('acct-trial-table','xylo-trial-balance.csv'));
+ document.querySelectorAll('[data-export-table]').forEach(btn=>btn.addEventListener('click',()=>exportAccountingTable(btn.dataset.exportTable,'xylo-'+btn.dataset.exportTable+'.csv')));
+ $('acct-new-account').addEventListener('click',()=>{$('acct-account-form').hidden=!$('acct-account-form').hidden});
+ $('acct-account-form').addEventListener('submit',saveAccountingAccount);
+ $('acct-stock-form').addEventListener('submit',saveAccountingStock);
+ if(!businesses.length){$('accounting-business').innerHTML='<option value="">Add a business first</option>';return}
+ $('accounting-business').innerHTML=businesses.map(b=>'<option value="'+b.id+'">'+acctEscape(b.display_name)+'</option>').join('');
+ acctBusinessId=businesses[0].id;
+ await loadAccountingData();
+}
+function showAccountingPage(show){
+ const content=$('content');if(!content)return;
+ $('accounting').hidden=!show;
+ for(const el of content.children){if(el.id==='accounting')continue;if(el.matches('.hero,.analytics,.section-head,.workspace,.profile-page,.foot'))el.hidden=show}
+ document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.id==='accounting-nav'&&show));
+ if(show){$('accounting').scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'','#accounting')}
+ else history.replaceState(null,'','#');
+}
+function showAccountingPanel(name){document.querySelectorAll('[data-accounting-tab]').forEach(b=>b.classList.toggle('active',b.dataset.accountingTab===name));document.querySelectorAll('[data-accounting-panel]').forEach(p=>p.classList.toggle('active',p.dataset.accountingPanel===name));}
+async function loadAccountingData(){
+ if(!acctBusinessId)return;
+ const [a,j,i]=await Promise.all([
+  supabase.from('accounts').select('*').eq('business_id',acctBusinessId).order('code'),
+  supabase.from('journal_entries').select('*').eq('business_id',acctBusinessId).order('entry_date',{ascending:false}).limit(500),
+  supabase.from('inventory_items').select('*').eq('business_id',acctBusinessId).eq('is_active',true).order('name')
+ ]);
+ for(const res of [a,j,i])if(res.error){console.error('Accounting data load failed:',res.error);notice('Accounting could not load: '+res.error.message);return}
+ acctAccounts=a.data||[];acctEntries=j.data||[];acctItems=i.data||[];
+ if(!acctAccounts.length){const seed=acctStarterAccounts.map(([code,name,account_type,normal_balance])=>({business_id:acctBusinessId,code,name,account_type,normal_balance,is_system:true}));const {error}=await supabase.from('accounts').insert(seed);if(error){notice('Could not create starter accounts: '+error.message);return}const again=await supabase.from('accounts').select('*').eq('business_id',acctBusinessId).order('code');if(again.error){notice(again.error.message);return}acctAccounts=again.data||[]}
+ const entryIds=acctEntries.map(e=>e.id);
+ if(entryIds.length){const lines=await supabase.from('journal_lines').select('*,accounts(id,code,name,account_type,normal_balance)').in('journal_entry_id',entryIds);if(lines.error){notice('Could not load journal lines: '+lines.error.message);return}acctLines=lines.data||[]}else acctLines=[];
+ renderAccountingAll();
+}
+function renderAccountingAll(){
+ const posted=acctEntries.filter(e=>e.status==='posted'),postedIds=new Set(posted.map(e=>e.id)),lines=acctLines.filter(l=>postedIds.has(l.journal_entry_id));
+ const debits=lines.reduce((s,l)=>s+Number(l.debit),0),credits=lines.reduce((s,l)=>s+Number(l.credit),0);
+ const netIncome=lines.reduce((s,l)=>s+(l.accounts?.account_type==='income'?Number(l.credit)-Number(l.debit):l.accounts?.account_type==='expense'?Number(l.debit)-Number(l.credit):0),0);
+ const stock=acctItems.reduce((s,i)=>s+Number(i.quantity)*Number(i.unit_cost),0);
+ $('acct-total-debits').textContent=acctMoney(debits);$('acct-total-credits').textContent=acctMoney(credits);$('acct-net-income').textContent=acctMoney(netIncome);$('acct-stock-value').textContent=acctMoney(stock);$('acct-inventory-total').textContent=acctMoney(stock);
+ $('accounting-checklist').innerHTML=[
+  ['Chart of accounts',acctAccounts.length+' accounts available','accounts'],
+  ['Journal entries',acctEntries.length+' entries · '+posted.length+' posted','journal'],
+  ['Trial balance',Math.abs(debits-credits)<.005?'Debits and credits agree':'Difference: '+acctMoney(debits-credits),'trial'],
+  ['Inventory register',acctItems.length+' active stock items','inventory']
+ ].map(([title,detail,tab])=>'<div class="business"><div><h3>'+title+'</h3><p>'+acctEscape(detail)+'</p></div><button type="button" class="textbutton" data-open-accounting="'+tab+'">Open ↗</button></div>').join('');
+ document.querySelectorAll('[data-open-accounting]').forEach(b=>b.addEventListener('click',()=>showAccountingPanel(b.dataset.openAccounting)));
+ renderAccountingJournal();renderAccountingAccounts();renderAccountingLedger();renderAccountingTrial();renderAccountingStatements();renderAccountingStock();
+}
+function renderAccountingJournal(){
+ const rows=acctEntries.map(e=>{const ls=acctLines.filter(l=>l.journal_entry_id===e.id),d=ls.reduce((s,l)=>s+Number(l.debit),0),c=ls.reduce((s,l)=>s+Number(l.credit),0);return '<tr><td>'+acctEscape(e.entry_date)+'</td><td>#'+e.entry_number+'</td><td>'+acctEscape(e.reference||'—')+'</td><td>'+acctEscape(e.description)+'</td><td><span class="accounting-status '+(e.status==='posted'?'posted':'')+'">'+acctEscape(e.status)+'</span></td><td class="num">'+acctMoney(d)+'</td><td class="num">'+acctMoney(c)+'</td></tr>'}).join('');
+ $('acct-journal-table').innerHTML=rows||'<tr><td colspan="7" class="accounting-empty">No journal entries yet. Create your first balanced entry.</td></tr>';
+}
+function renderAccountingAccounts(){
+ $('acct-accounts-table').innerHTML=acctAccounts.map(a=>'<tr><td>'+acctEscape(a.code)+'</td><td>'+acctEscape(a.name)+'</td><td>'+acctEscape(a.account_type)+'</td><td>'+acctEscape(a.normal_balance)+'</td><td>'+(a.is_active?'Active':'Inactive')+'</td></tr>').join('')||'<tr><td colspan="5" class="accounting-empty">No accounts configured.</td></tr>';
+ const options=acctAccounts.filter(a=>a.is_active).map(a=>'<option value="'+a.id+'">'+acctEscape(a.code+' — '+a.name)+'</option>').join('');
+ $('acct-ledger-account').innerHTML=options;$('acct-journal-lines').querySelectorAll('select[name="account_id"]').forEach(s=>{const previous=s.value;s.innerHTML=options;if(previous)s.value=previous});
+}
+function renderAccountingLedger(){
+ const accountId=$('acct-ledger-account').value;const account=acctAccounts.find(a=>a.id===accountId);
+ let running=0;const rows=acctLines.filter(l=>l.account_id===accountId&&acctEntries.some(e=>e.id===l.journal_entry_id&&e.status==='posted')).sort((x,y)=>{const ex=acctEntries.find(e=>e.id===x.journal_entry_id),ey=acctEntries.find(e=>e.id===y.journal_entry_id);return (ex?.entry_date||'').localeCompare(ey?.entry_date||'')});
+ $('acct-ledger-table').innerHTML=rows.map(l=>{const e=acctEntries.find(x=>x.id===l.journal_entry_id);running+=account?.normal_balance==='credit'?Number(l.credit)-Number(l.debit):Number(l.debit)-Number(l.credit);return '<tr><td>'+acctEscape(e?.entry_date)+'</td><td>#'+e?.entry_number+'</td><td>'+acctEscape(e?.description)+'</td><td class="num">'+acctMoney(l.debit)+'</td><td class="num">'+acctMoney(l.credit)+'</td><td class="num">'+acctMoney(running)+'</td></tr>'}).join('')||'<tr><td colspan="6" class="accounting-empty">Select an account with posted activity to view its ledger.</td></tr>';
+}
+function accountingBalances(){
+ const map=new Map(acctAccounts.map(a=>[a.id,{account:a,debit:0,credit:0}]));
+ const postedIds=new Set(acctEntries.filter(e=>e.status==='posted').map(e=>e.id));
+ acctLines.filter(l=>postedIds.has(l.journal_entry_id)).forEach(l=>{const row=map.get(l.account_id);if(row){row.debit+=Number(l.debit);row.credit+=Number(l.credit)}});
+ return [...map.values()].map(x=>({...x,balance:x.account.normal_balance==='debit'?x.debit-x.credit:x.credit-x.debit}));
+}
+function renderAccountingTrial(){
+ const rows=accountingBalances();let d=0,c=0;
+ $('acct-trial-table').innerHTML=rows.map(r=>{const debit=Math.max(r.balance,0),credit=Math.max(-r.balance,0);d+=debit;c+=credit;return '<tr><td>'+acctEscape(r.account.code)+'</td><td>'+acctEscape(r.account.name)+'</td><td>'+acctEscape(r.account.account_type)+'</td><td class="num">'+acctMoney(debit)+'</td><td class="num">'+acctMoney(credit)+'</td></tr>'}).join('')||'<tr><td colspan="5" class="accounting-empty">No accounts to report.</td></tr>';
+ $('acct-trial-foot').innerHTML='<tr><th colspan="3">Total</th><th class="num">'+acctMoney(d)+'</th><th class="num">'+acctMoney(c)+'</th></tr>';
+ acctMessage('acct-trial-message',Math.abs(d-c)<.005?'Balanced — total debits equal total credits.':'Out of balance by '+acctMoney(d-c)+'. Review posted journal entries.');
+}
+function renderAccountingStatements(){
+ const balances=accountingBalances();
+ const pl=balances.filter(r=>['income','expense'].includes(r.account.account_type));
+ const income=pl.filter(r=>r.account.account_type==='income'),expenses=pl.filter(r=>r.account.account_type==='expense');
+ const fmtRow=r=>'<tr><td>'+acctEscape(r.account.code+' — '+r.account.name)+'</td><td class="num">'+acctMoney(r.balance)+'</td></tr>';
+ $('acct-pl-table').innerHTML=pl.map(fmtRow).join('')||'<tr><td colspan="2" class="accounting-empty">Post journal entries to populate the profit & loss statement.</td></tr>';
+ $('acct-pl-foot').innerHTML='<tr><th>Net profit / (loss)</th><th class="num">'+acctMoney(income.reduce((s,r)=>s+r.balance,0)-expenses.reduce((s,r)=>s+r.balance,0))+'</th></tr>';
+ $('acct-bs-table').innerHTML=balances.filter(r=>['asset','liability','equity'].includes(r.account.account_type)).map(fmtRow).join('')||'<tr><td colspan="2" class="accounting-empty">Post journal entries to populate the balance sheet.</td></tr>';
+ const cashIds=new Set(acctAccounts.filter(a=>a.code==='1000'||a.code==='1010'||/cash|bank/i.test(a.name)).map(a=>a.id));
+ const cashLines=acctLines.filter(l=>cashIds.has(l.account_id)&&acctEntries.some(e=>e.id===l.journal_entry_id&&e.status==='posted'));
+ const cashRows=acctAccounts.filter(a=>cashIds.has(a.id)).map(a=>{const ls=cashLines.filter(l=>l.account_id===a.id),inflow=ls.reduce((s,l)=>s+Number(l.debit),0),outflow=ls.reduce((s,l)=>s+Number(l.credit),0);return '<tr><td>'+acctEscape(a.name)+'</td><td class="num">'+acctMoney(inflow)+'</td><td class="num">'+acctMoney(outflow)+'</td><td class="num">'+acctMoney(inflow-outflow)+'</td></tr>'});
+ $('acct-cash-table').innerHTML=cashRows.join('')||'<tr><td colspan="4" class="accounting-empty">Cash and bank accounts will appear here.</td></tr>';
+}
+function renderAccountingStock(){
+ const stockValue=acctItems.reduce((s,i)=>s+Number(i.quantity)*Number(i.unit_cost),0);$('acct-inventory-total').textContent=acctMoney(stockValue);$('acct-stock-value').textContent=acctMoney(stockValue);
+ $('acct-stock-table').innerHTML=acctItems.map(i=>'<tr><td>'+acctEscape(i.sku||'—')+'</td><td>'+acctEscape(i.name)+'</td><td class="num">'+Number(i.quantity).toLocaleString('en-IN')+'</td><td>'+acctEscape(i.unit)+'</td><td class="num">'+acctMoney(i.unit_cost)+'</td><td class="num">'+acctMoney(Number(i.quantity)*Number(i.unit_cost))+'</td><td><span class="accounting-status '+(Number(i.quantity)<=Number(i.reorder_level)?'':'posted')+'">'+(Number(i.quantity)<=Number(i.reorder_level)?'Reorder':'In stock')+'</span></td></tr>').join('')||'<tr><td colspan="7" class="accounting-empty">No stock items yet. Add an item to start your inventory register.</td></tr>';
+}
+function addAccountingLine(){
+ const row=document.createElement('div');row.className='accounting-line-entry';
+ row.innerHTML='<select name="account_id" aria-label="Account" required>'+acctAccounts.filter(a=>a.is_active).map(a=>'<option value="'+a.id+'">'+acctEscape(a.code+' — '+a.name)+'</option>').join('')+'</select><input name="line_description" class="accounting-line-description" maxlength="160" placeholder="Line note"><input name="debit" type="number" min="0" step="0.01" placeholder="Debit" value="0" required><input name="credit" type="number" min="0" step="0.01" placeholder="Credit" value="0" required><button type="button" class="accounting-remove-line" aria-label="Remove journal line">×</button>';
+ row.querySelector('.accounting-remove-line').addEventListener('click',()=>{if($('acct-journal-lines').children.length>2)row.remove();else acctMessage('acct-journal-message','A journal entry needs at least two lines.')});
+ const debit=row.querySelector('[name="debit"]'),credit=row.querySelector('[name="credit"]');debit.addEventListener('input',()=>{if(Number(debit.value)>0)credit.value='0'});credit.addEventListener('input',()=>{if(Number(credit.value)>0)debit.value='0'});
+ $('acct-journal-lines').append(row);
+}
+async function saveAccountingJournal(e){
+ e.preventDefault();const btn=$('acct-save-journal');btn.disabled=true;
+ try{
+  const lines=[...$('acct-journal-lines').querySelectorAll('.accounting-line-entry')].map(row=>({account_id:row.querySelector('[name="account_id"]').value,description:row.querySelector('[name="line_description"]').value.trim()||null,debit:Number(row.querySelector('[name="debit"]').value)||0,credit:Number(row.querySelector('[name="credit"]').value)||0}));
+  const debit=lines.reduce((s,l)=>s+l.debit,0),credit=lines.reduce((s,l)=>s+l.credit,0);
+  if(lines.length<2||lines.some(l=>(l.debit>0)===(l.credit>0))||Math.abs(debit-credit)>.005||debit<=0)throw new Error('Add at least two valid lines and ensure total debits equal total credits.');
+  const {data:entry,error}=await supabase.from('journal_entries').insert({business_id:acctBusinessId,entry_date:$('acct-entry-date').value,reference:$('acct-entry-reference').value.trim()||null,description:$('acct-entry-description').value.trim(),status:'draft'}).select().single();if(error)throw error;
+  const inserted=await supabase.from('journal_lines').insert(lines.map(l=>({...l,journal_entry_id:entry.id})));if(inserted.error){await supabase.from('journal_entries').delete().eq('id',entry.id);throw inserted.error}
+  const posted=await supabase.from('journal_entries').update({status:'posted',posted_at:new Date().toISOString()}).eq('id',entry.id);if(posted.error)throw posted.error;
+  acctMessage('acct-journal-message','Journal entry posted. Debits and credits balance.');$('acct-journal-form').reset();$('acct-journal-lines').replaceChildren();$('acct-journal-form-wrap').hidden=true;await loadAccountingData();
+ }catch(err){acctMessage('acct-journal-message',err.message||'Could not save journal entry.')}finally{btn.disabled=false}
+}
+async function saveAccountingAccount(e){
+ e.preventDefault();const account_type=$('acct-account-type').value;const payload={business_id:acctBusinessId,code:$('acct-account-code').value.trim(),name:$('acct-account-name').value.trim(),account_type,normal_balance:['asset','expense'].includes(account_type)?'debit':'credit',is_system:false};
+ const {error}=await supabase.from('accounts').insert(payload);if(error){acctMessage('acct-account-message',error.message);return}
+ $('acct-account-form').reset();$('acct-account-form').hidden=true;acctMessage('acct-account-message','Account saved.');await loadAccountingData();
+}
+async function saveAccountingStock(e){
+ e.preventDefault();const btn=$('acct-stock-save');btn.disabled=true;
+ try{const quantity=Number($('acct-stock-qty').value),unit_cost=Number($('acct-stock-cost').value),reorder_level=Number($('acct-stock-reorder').value);
+ const {data:item,error}=await supabase.from('inventory_items').insert({business_id:acctBusinessId,name:$('acct-stock-name').value.trim(),sku:$('acct-stock-sku').value.trim()||null,quantity,unit_cost,reorder_level,unit:$('acct-stock-unit').value}).select().single();if(error)throw error;
+ if(quantity>0){const {error:movementError}=await supabase.from('stock_movements').insert({business_id:acctBusinessId,item_id:item.id,movement_type:'opening',quantity,unit_cost,notes:'Opening stock recorded on item creation'});if(movementError)console.warn('Opening stock movement could not be recorded:',movementError.message)}
+ $('acct-stock-form').reset();$('acct-stock-qty').value='0';$('acct-stock-cost').value='0';$('acct-stock-reorder').value='0';acctMessage('acct-stock-message','Stock item added.');await loadAccountingData();
+ }catch(err){acctMessage('acct-stock-message',err.message||'Could not save stock item.')}finally{btn.disabled=false}
+}
+function exportAccountingTable(id,filename){
+ const table=$(id);if(!table)return;const csv=[...table.querySelectorAll('tr')].map(row=>[...row.querySelectorAll('th,td')].map(cell=>'"'+cell.innerText.replace(/"/g,'""').trim()+'"').join(',')).join('\r\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
 
 try{await load()}catch(err){$('loading').textContent='We could not load your workspace.';$('connection-status').textContent='Connection needs attention';$('side-user').textContent='Account connection needs attention';const box=document.createElement('div');box.className='notice show';box.textContent=err?.message||'Please refresh and try again.';$('loading').after(box);console.error('Xylo workspace load failed:',err)}
 </script></body></html>
