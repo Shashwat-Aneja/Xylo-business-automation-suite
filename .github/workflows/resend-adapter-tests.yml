@@ -22,4 +22,4 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run Resend adapter unit tests
-        run: python -m unittest backend.tests.test_resend_mail backend.tests.test_email_templates -v
+        run: python -m unittest backend.tests.test_resend_mail backend.tests.test_email_templates backend.tests.test_invoice_mail -v
