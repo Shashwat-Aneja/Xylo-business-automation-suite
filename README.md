@@ -28,6 +28,8 @@ Database foundation currently includes `profiles` and `businesses`, with owner-s
 - Auth: `/auth-experience/`
 - Workspace onboarding: `/dashboard/`
 - Transaction register prototype: `/transactions/`
+- Invoice register prototype: `/invoices/`
+- Financial reports prototype: `/reports/`
 
 ## Architecture and delivery plan
 
