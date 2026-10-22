@@ -22,10 +22,10 @@
 <body>
 <main class="shell">
 <aside class="story"><div class="logo">Xylo<span>.</span></div><h1>Business is<br>built in the<br><em>details.</em></h1><p>A considered workspace for your numbers, decisions, and everyday business details.</p><footer>Accounting · Operations · Clarity</footer></aside>
-<section class="panel"><div class="top" aria-hidden="true"><span>Secure sign-in</span></div>
+<section class="panel"><div class="top"><span id="top-copy">New to Xylo?</span><button class="link" id="top-switch" type="button">Create account</button></div>
 <div class="form"><div class="eyebrow" id="eyebrow">Your workspace, in order</div><h2 id="heading">Welcome<br>back.</h2><p class="desc" id="description">Sign in to pick up where you left off. Your business, right where you need it.</p><div class="notice" id="notice" role="status" aria-live="polite"></div>
 <section class="verification-panel" id="verification-panel" hidden aria-labelledby="verification-heading"><div class="eyebrow">One last detail</div><h3 id="verification-heading">Check your inbox.</h3><p>We sent a confirmation link to <span class="verification-email" id="verification-email"></span>. Keep this tab open. Xylo will check for confirmation and continue when your email is verified.</p><div class="verification-actions"><button class="primary" id="check-verification" type="button"><span>I've verified my email</span><span>↗</span></button><button class="primary" id="resend-verification" type="button"><span>Resend confirmation email</span><span>↗</span></button><button class="link" id="change-email" type="button">Use a different email / return to sign in</button></div><div class="verification-state" id="verification-state" role="status" aria-live="polite" hidden></div></section>
-<form id="auth-form" novalidate hidden><div class="field" id="name-row" hidden><label for="name">Full name</label><input id="name" autocomplete="name" maxlength="160" placeholder="How should we address you?"></div>
+<form id="auth-form" novalidate><div class="field" id="name-row" hidden><label for="name">Full name</label><input id="name" autocomplete="name" maxlength="160" placeholder="How should we address you?"></div>
 <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" placeholder="you@business.com" required></div>
 <div class="field"><label for="password">Password</label><div class="password"><input id="password" type="password" autocomplete="current-password" minlength="8" placeholder="At least 8 characters" required><button type="button" id="reveal">Show</button></div></div>
 <div class="forgot-row" id="forgot-row"><button class="link" id="forgot-password" type="button">Forgot password?</button></div>
@@ -33,6 +33,7 @@
 <label class="check" id="terms-row" hidden><input type="checkbox" id="terms"><span>I agree to the terms and privacy policy. These documents must be reviewed before public launch.</span></label>
 <button class="primary" id="submit" type="submit"><span id="submit-copy">Sign in to Xylo</span><span>↗</span></button></form>
 <div class="auth-methods" id="alternate-auth">
+<div class="auth-divider"><span>or continue with</span></div>
 <button class="alternate-button" id="google-signin" type="button"><span class="google-mark" aria-hidden="true">G</span><span>Continue with Google</span><span>↗</span></button>
 </div>
 <div id="phone-panel" class="phone-panel" hidden>
@@ -41,7 +42,7 @@
 <button class="primary" id="phone-send" type="button"><span>Send OTP</span><span>↗</span></button>
 <button class="link phone-cancel" id="phone-cancel" type="button">Back to email sign in</button>
 </div>
-<div class="bottom">Continue securely with your Google account.</div>
+<div class="bottom"><span id="bottom-copy">First time here?</span> <button class="link" id="bottom-switch" type="button">Create an account</button></div>
 <p class="legal">Secure authentication is handled by Supabase Auth. Passwords are never written to Xylo profile tables. If email confirmation is enabled, check your inbox before signing in.</p></div>
 <div class="foot"><span>© Xylo</span><span>Made for real work.</span></div></section></main>
 <script type="module">
