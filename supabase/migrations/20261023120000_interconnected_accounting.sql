@@ -302,10 +302,8 @@ begin
        and new.invoice_number = old.invoice_number
        and new.document_date = old.document_date
        and new.accounting_date = old.accounting_date
-       and new.net_amount = old.net_amount
-       and new.tax_amount = old.tax_amount
-       and new.gross_amount = old.gross_amount
-       and new.posting_journal_id = old.posting_journal_id
+       and (to_jsonb(new) - array['status','cancellation_journal_id','cancellation_reason','cancelled_at','cancelled_by','updated_at'])
+           = (to_jsonb(old) - array['status','cancellation_journal_id','cancellation_reason','cancelled_at','cancelled_by','updated_at'])
        and new.cancellation_journal_id is not null
        and nullif(trim(new.cancellation_reason), '') is not null then
       select status into v_journal_status from public.journal_entries
@@ -462,6 +460,26 @@ begin
   v_gross := v_net + v_tax;
   if v_net <> v_invoice.net_amount or v_tax <> v_invoice.tax_amount or v_gross <> v_invoice.gross_amount then
     raise exception using errcode = '23514', message = 'INVOICE_TOTALS_DO_NOT_MATCH_LINES';
+  end if;
+
+  if not exists (
+    select 1 from public.business_accounting_profiles p
+     where p.business_id = v_invoice.business_id
+       and p.applicability_review_status = 'approved'
+       and v_invoice.document_date >= p.profile_effective_from
+       and (p.profile_effective_to is null or v_invoice.document_date <= p.profile_effective_to)
+  ) then
+    raise exception using errcode = '55000', message = 'BUSINESS_APPLICABILITY_PROFILE_NOT_APPROVED';
+  end if;
+
+  if not exists (
+    select 1 from public.accounting_rule_registry r
+     where r.rule_id = 'IN.SALES_INVOICE.POST'
+       and r.review_status = 'approved' and r.release_status = 'enabled'
+       and v_invoice.document_date >= r.effective_from
+       and (r.effective_to is null or v_invoice.document_date <= r.effective_to)
+  ) then
+    raise exception using errcode = '55000', message = 'SALES_INVOICE_POSTING_RULE_NOT_INDEPENDENTLY_APPROVED';
   end if;
 
   if v_tax > 0 and not exists (
