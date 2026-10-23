@@ -1,0 +1,32 @@
+name: Internal link checks
+
+on:
+  pull_request:
+    paths:
+      - "**/*.html"
+      - "scripts/check_internal_links.py"
+      - ".github/workflows/internal-link-check.yml"
+  push:
+    branches:
+      - main
+      - "feature/**"
+    paths:
+      - "**/*.html"
+      - "scripts/check_internal_links.py"
+      - ".github/workflows/internal-link-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check local HTML links
+        run: python scripts/check_internal_links.py
