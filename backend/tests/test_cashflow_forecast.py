@@ -118,3 +118,8 @@ def test_source_warnings_are_preserved_without_duplicates():
 
     assert result.warnings == ("supplier payment workflow unavailable",)
     assert result.buckets[0].warnings == result.warnings
+
+
+def test_money_rejects_fractional_minor_units():
+    with pytest.raises(ValueError, match="fractional minor currency units"):
+        money("1.001")
