@@ -114,10 +114,13 @@ begin
     raise exception using errcode = '23514', message = 'ALLOCATION_EXCEEDS_INVOICE_OR_RECEIPT_BALANCE';
   end if;
 
-  select coalesce(sum(debit),0), coalesce(sum(credit),0),
-         max(account_id) filter (where debit > 0), max(account_id) filter (where credit > 0)
-    into v_debit, v_credit, v_debit_account, v_credit_account
+  select coalesce(sum(debit),0), coalesce(sum(credit),0)
+    into v_debit, v_credit
     from public.journal_lines where journal_entry_id = new.journal_entry_id;
+  select account_id into v_debit_account from public.journal_lines
+    where journal_entry_id = new.journal_entry_id and debit > 0 order by id limit 1;
+  select account_id into v_credit_account from public.journal_lines
+    where journal_entry_id = new.journal_entry_id and credit > 0 order by id limit 1;
   if v_debit <> new.amount or v_credit <> new.amount
      or v_debit_account is distinct from v_receipt.customer_advance_account_id
      or v_credit_account is distinct from v_invoice.accounts_receivable_account_id then
