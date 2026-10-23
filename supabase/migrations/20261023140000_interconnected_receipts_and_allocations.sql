@@ -23,6 +23,9 @@ declare v_status text; v_source_type text; v_source_id uuid;
 begin
   if tg_op = 'DELETE' then
     if old.status <> 'draft' then raise exception using errcode = '55000', message = 'POSTED_RECEIPT_CANNOT_BE_DELETED'; end if;
+    insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, reason, metadata)
+    values (old.business_id, auth.uid(), 'cash_receipt.draft_deleted', 'cash_receipt', old.id,
+      'Unposted draft deleted', jsonb_build_object('receipt_number', old.receipt_number));
     return old;
   end if;
   if old.status <> 'draft' then
