@@ -30,7 +30,7 @@ alter table public.business_accounting_profiles
 
 create or replace function private.guard_accounting_profile_review()
 returns trigger language plpgsql set search_path = ''
-as $
+as $$
 begin
   if tg_op = 'INSERT' then
     if new.applicability_review_status = 'approved' and auth.uid() is not null then
