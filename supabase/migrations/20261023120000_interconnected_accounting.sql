@@ -345,6 +345,9 @@ begin
     if old.status <> 'draft' then
       raise exception using errcode = '55000', message = 'POSTED_INVOICE_CANNOT_BE_DELETED; use a permitted correction workflow';
     end if;
+    insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, reason, metadata)
+    values (old.business_id, auth.uid(), 'invoice.draft_deleted', 'sales_invoice', old.id,
+      'Unposted draft deleted', jsonb_build_object('invoice_number', old.invoice_number));
     return old;
   end if;
 
@@ -638,9 +641,6 @@ begin
     raise exception using errcode = '55000', message = 'POSTED_INVOICE_REQUIRES_CORRECTION_WORKFLOW';
   end if;
   delete from public.sales_invoices where id = v_invoice.id;
-  insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, reason, metadata)
-  values (v_invoice.business_id, auth.uid(), 'invoice.draft_deleted', 'sales_invoice', v_invoice.id,
-          'Unposted draft deleted', jsonb_build_object('invoice_number', v_invoice.invoice_number));
   return true;
 end;
 $$;
