@@ -29,6 +29,10 @@ begin
     raise exception using errcode = '55000', message = 'POSTED_RECEIPT_IMMUTABLE; use a permitted correction workflow';
   end if;
   if new.status = 'posted' then
+    if current_setting('xylo.posting_source_type', true) is distinct from 'cash_receipt'
+       or current_setting('xylo.posting_source_id', true) is distinct from new.id::text then
+      raise exception using errcode = '42501', message = 'RECEIPT_MUST_USE_CONTROLLED_POSTING_WORKFLOW';
+    end if;
     select status, source_document_type, source_document_id into v_status, v_source_type, v_source_id
       from public.journal_entries where id = new.journal_entry_id and business_id = new.business_id;
     if v_status is distinct from 'posted' or v_source_type is distinct from 'cash_receipt'
@@ -53,6 +57,10 @@ begin
   end if;
   if new.journal_entry_id is null or new.idempotency_key is null then
     raise exception using errcode = '23514', message = 'ALLOCATION_REQUIRES_JOURNAL_AND_IDEMPOTENCY_KEY';
+  end if;
+  if current_setting('xylo.posting_source_type', true) is distinct from 'receipt_allocation'
+     or current_setting('xylo.posting_source_id', true) is distinct from new.id::text then
+    raise exception using errcode = '42501', message = 'ALLOCATION_MUST_USE_CONTROLLED_POSTING_WORKFLOW';
   end if;
   if not exists (
     select 1 from public.journal_entries je
@@ -183,6 +191,8 @@ begin
     values (v_journal_id, v_receipt.cash_bank_account_id, 'Receipt received — ' || v_receipt.receipt_number, v_receipt.amount, 0);
   insert into public.journal_lines (journal_entry_id, account_id, description, debit, credit)
     values (v_journal_id, v_receipt.customer_advance_account_id, 'Customer advance — ' || v_receipt.receipt_number, 0, v_receipt.amount);
+  perform set_config('xylo.posting_source_type', 'cash_receipt', true);
+  perform set_config('xylo.posting_source_id', v_receipt.id::text, true);
   update public.journal_entries set status = 'posted', posted_at = now() where id = v_journal_id;
   update public.cash_receipts set status = 'posted', journal_entry_id = v_journal_id where id = v_receipt.id;
   insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, metadata)
@@ -252,6 +262,8 @@ begin
     p_idempotency_key, 'accounting-core-v1')
   returning id into v_journal_id;
 
+  perform set_config('xylo.posting_source_type', 'receipt_allocation', true);
+  perform set_config('xylo.posting_source_id', v_allocation_id::text, true);
   insert into public.invoice_receipt_allocations
     (id, business_id, invoice_id, receipt_id, amount, journal_entry_id, created_by, idempotency_key)
   values (v_allocation_id, v_invoice.business_id, v_invoice.id, v_receipt.id, p_amount, v_journal_id, auth.uid(), p_idempotency_key);
