@@ -23,6 +23,42 @@ create table if not exists public.business_accounting_profiles (
   check (reporting_basis_default = any(supported_reporting_bases))
 );
 
+alter table public.business_accounting_profiles
+  add column if not exists reviewed_by text,
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists review_evidence jsonb not null default '{}'::jsonb;
+
+create or replace function private.guard_accounting_profile_review()
+returns trigger language plpgsql set search_path = ''
+as $
+begin
+  if tg_op = 'INSERT' then
+    if new.applicability_review_status = 'approved' and auth.uid() is not null then
+      raise exception using errcode = '42501', message = 'ACCOUNTING_PROFILE_APPROVAL_REQUIRES_INDEPENDENT_REVIEW';
+    end if;
+    return new;
+  end if;
+  if new.applicability_review_status = 'approved' and old.applicability_review_status <> 'approved'
+     and auth.uid() is not null then
+    raise exception using errcode = '42501', message = 'ACCOUNTING_PROFILE_APPROVAL_REQUIRES_INDEPENDENT_REVIEW';
+  end if;
+  if old.applicability_review_status = 'approved'
+     and (new.legal_form, new.framework_code, new.framework_version, new.gst_registration_status, new.gstin,
+          new.profile_effective_from, new.profile_effective_to)
+       is distinct from
+         (old.legal_form, old.framework_code, old.framework_version, old.gst_registration_status, old.gstin,
+          old.profile_effective_from, old.profile_effective_to)
+     and new.applicability_review_status = 'approved' then
+    raise exception using errcode = '23514', message = 'CHANGING_APPROVED_APPLICABILITY_FACTS_REQUIRES_REVIEW';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.guard_accounting_profile_review() from public, anon, authenticated;
+drop trigger if exists accounting_profile_review_guard on public.business_accounting_profiles;
+create trigger accounting_profile_review_guard before insert or update on public.business_accounting_profiles
+for each row execute function private.guard_accounting_profile_review();
+
 create table if not exists public.accounting_periods (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete restrict,
