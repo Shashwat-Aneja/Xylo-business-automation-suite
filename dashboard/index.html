@@ -186,6 +186,13 @@ async function initAccounting(){
  if(!$('accounting-business')||!$('acct-new-journal')||!$('acct-stock-form')){console.error('Accounting markup is missing; skipping accounting initialization.');return}
  const nav=$('accounting-nav');nav?.addEventListener('click',e=>{e.preventDefault();showAccountingPage(true)});
  document.querySelectorAll('[data-accounting-tab]').forEach(btn=>btn.addEventListener('click',()=>showAccountingPanel(btn.dataset.accountingTab)));
+ document.querySelectorAll('[data-accounting-panel]').forEach(panel=>{
+  if(panel.dataset.accountingPanel==='overview')return;
+  if(panel.querySelector('.accounting-panel-back'))return;
+  const back=document.createElement('button');back.type='button';back.className='accounting-screen-back accounting-panel-back';back.textContent='← Back to accounting overview';
+  back.addEventListener('click',()=>showAccountingPanel('overview'));
+  panel.prepend(back);
+ });
  $('accounting-business').addEventListener('change',async e=>{acctBusinessId=e.target.value;await loadAccountingData()});
  $('acct-new-journal').addEventListener('click',()=>{const wrap=$('acct-journal-form-wrap');wrap.hidden=!wrap.hidden;if(!wrap.hidden){$('acct-entry-date').value=new Date().toISOString().slice(0,10);if(!$('acct-journal-lines').children.length){addAccountingLine();addAccountingLine()}}});
  $('acct-add-line').addEventListener('click',addAccountingLine);
