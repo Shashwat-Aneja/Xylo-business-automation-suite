@@ -128,7 +128,9 @@ begin
       select status into v_journal_status from public.journal_entries
        where id = new.cancellation_journal_id and business_id = old.business_id
          and source_document_type = 'supplier_bill_cancellation' and source_document_id = old.id and entry_kind = 'reversal';
-      if v_journal_status = 'posted' then return new; end if;
+      if v_journal_status = 'posted'
+         and current_setting('xylo.posting_source_type', true) is not distinct from 'supplier_bill_cancellation'
+         and current_setting('xylo.posting_source_id', true) is not distinct from new.id::text then return new; end if;
     end if;
     raise exception using errcode = '55000', message = 'POSTED_SUPPLIER_BILL_IMMUTABLE';
   end if;
@@ -136,8 +138,10 @@ begin
     select status into v_journal_status from public.journal_entries
      where id = new.posting_journal_id and business_id = new.business_id
        and source_document_type = 'supplier_bill' and source_document_id = new.id and entry_kind = 'original';
-    if v_journal_status <> 'posted' then
-      raise exception using errcode = '23514', message = 'SUPPLIER_BILL_REQUIRES_POSTED_JOURNAL';
+    if v_journal_status <> 'posted'
+       or current_setting('xylo.posting_source_type', true) is distinct from 'supplier_bill'
+       or current_setting('xylo.posting_source_id', true) is distinct from new.id::text then
+      raise exception using errcode = '23514', message = 'SUPPLIER_BILL_REQUIRES_CONTROLLED_POSTED_JOURNAL';
     end if;
   end if;
   return new;
@@ -226,6 +230,7 @@ begin
    into v_count, v_net, v_tax from public.supplier_bill_lines where supplier_bill_id = v_bill.id and business_id = v_bill.business_id;
   if v_count = 0 then raise exception using errcode = '23514', message = 'SUPPLIER_BILL_REQUIRES_LINES'; end if;
   v_gross := v_net + v_tax;
+  if v_gross <= 0 then raise exception using errcode = '23514', message = 'ZERO_TOTAL_SUPPLIER_BILL_CANNOT_BE_POSTED'; end if;
   if v_net <> v_bill.net_amount or v_tax <> v_bill.tax_amount or v_gross <> v_bill.gross_amount then
     raise exception using errcode = '23514', message = 'SUPPLIER_BILL_TOTALS_DO_NOT_MATCH_LINES';
   end if;
@@ -278,6 +283,8 @@ begin
   insert into public.journal_lines (journal_entry_id, account_id, description, debit, credit)
     values (v_journal_id, v_bill.accounts_payable_account_id, 'Payable — ' || v_bill.bill_number, 0, v_gross);
 
+  perform set_config('xylo.posting_source_type', 'supplier_bill', true);
+  perform set_config('xylo.posting_source_id', v_bill.id::text, true);
   update public.journal_entries set status = 'posted', posted_at = now() where id = v_journal_id;
   update public.supplier_bills set status = 'posted', posting_journal_id = v_journal_id, updated_at = now() where id = v_bill.id;
   insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, metadata)
