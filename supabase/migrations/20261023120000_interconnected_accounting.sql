@@ -416,7 +416,12 @@ with check (
 create policy "Authenticated read accounting rules" on public.accounting_rule_registry for select to authenticated using (true);
 create policy "Owners read audit events" on public.accounting_audit_events for select to authenticated
 using (exists (select 1 from public.businesses b where b.id = business_id and b.owner_id = (select auth.uid())));
+create policy "Owners append audit events" on public.accounting_audit_events for insert to authenticated
+with check (actor_id = (select auth.uid()) and exists (
+  select 1 from public.businesses b where b.id = business_id and b.owner_id = (select auth.uid())
+));
 
+grant select, insert on public.accounting_audit_events to authenticated;
 grant select, insert, update, delete on public.business_accounting_profiles, public.accounting_periods, public.customers to authenticated;
 grant select, insert, update, delete on public.sales_invoices, public.sales_invoice_lines to authenticated;
 grant select, insert, update, delete on public.cash_receipts, public.invoice_receipt_allocations to authenticated;
