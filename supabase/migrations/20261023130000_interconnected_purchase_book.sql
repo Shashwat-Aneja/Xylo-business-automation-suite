@@ -118,6 +118,9 @@ begin
     if old.status <> 'draft' then
       raise exception using errcode = '55000', message = 'POSTED_SUPPLIER_BILL_CANNOT_BE_DELETED';
     end if;
+    insert into public.accounting_audit_events (business_id, actor_id, event_type, entity_type, entity_id, reason, metadata)
+    values (old.business_id, auth.uid(), 'supplier_bill.draft_deleted', 'supplier_bill', old.id,
+      'Unposted draft deleted', jsonb_build_object('bill_number', old.bill_number));
     return old;
   end if;
   if old.status <> 'draft' then
