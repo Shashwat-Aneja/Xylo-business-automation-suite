@@ -277,7 +277,7 @@ begin
   end if;
   return new;
 end;
-$$$;
+$$;
 revoke all on function private.assert_journal_balanced() from public, anon, authenticated;
 drop trigger if exists journal_entries_balance_before_post on public.journal_entries;
 create trigger journal_entries_balance_before_post
@@ -321,7 +321,7 @@ begin
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$$$;
+$$;
 revoke all on function private.protect_posted_journal() from public, anon, authenticated;
 drop trigger if exists journal_entries_immutable_after_post on public.journal_entries;
 create trigger journal_entries_immutable_after_post
@@ -383,7 +383,7 @@ begin
   end if;
   return new;
 end;
-$$$;
+$$;
 revoke all on function private.guard_sales_invoice() from public, anon, authenticated;
 drop trigger if exists sales_invoice_state_guard on public.sales_invoices;
 create trigger sales_invoice_state_guard
@@ -614,7 +614,7 @@ begin
 
   return query select v_invoice.id, v_journal_id, 'posted'::text;
 end;
-$$$;
+$$;
 revoke all on function public.post_sales_invoice(uuid, text) from public, anon;
 grant execute on function public.post_sales_invoice(uuid, text) to authenticated;
 
@@ -643,7 +643,7 @@ begin
           'Unposted draft deleted', jsonb_build_object('invoice_number', v_invoice.invoice_number));
   return true;
 end;
-$$$;
+$$;
 revoke all on function public.delete_draft_sales_invoice(uuid) from public, anon;
 grant execute on function public.delete_draft_sales_invoice(uuid) to authenticated;
 
@@ -727,7 +727,7 @@ begin
 
   return query select v_invoice.id, v_reversal, 'cancelled'::text;
 end;
-$$$;
+$$;
 revoke all on function public.cancel_unpaid_untaxed_sales_invoice(uuid, date, text, text) from public, anon;
 grant execute on function public.cancel_unpaid_untaxed_sales_invoice(uuid, date, text, text) to authenticated;
 
