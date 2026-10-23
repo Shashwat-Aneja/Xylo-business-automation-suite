@@ -106,7 +106,8 @@ begin
     raise exception using errcode = '55000', message = 'PAYMENT_MUST_BE_POSTED_BEFORE_ALLOCATION';
   end if;
   if v_bill.status is distinct from 'posted' or v_payment.supplier_id <> v_bill.supplier_id
-     or v_payment.currency_code <> v_bill.currency_code then
+     or v_payment.currency_code <> v_bill.currency_code
+     or v_payment.accounts_payable_account_id <> v_bill.accounts_payable_account_id then
     raise exception using errcode = '23514', message = 'PAYMENT_AND_BILL_SUPPLIER_CURRENCY_OR_STATUS_MISMATCH';
   end if;
   select coalesce(sum(amount),0) into v_payment_allocated
