@@ -23,7 +23,10 @@ def money(value: object) -> Decimal:
         raise ValueError("amount must be a valid decimal value") from exc
     if not amount.is_finite():
         raise ValueError("amount must be finite")
-    return amount.quantize(Decimal("0.01"))
+    rounded = amount.quantize(Decimal("0.01"))
+    if amount != rounded:
+        raise ValueError("amount cannot contain fractional minor currency units")
+    return rounded
 
 
 @dataclass(frozen=True)
