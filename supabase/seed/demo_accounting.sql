@@ -20,9 +20,10 @@ begin
     raise exception 'Set xylo.demo_owner_id to an existing TEST auth.users.id before running this seed';
   end if;
 
-  insert into public.businesses (owner_id, display_name, legal_name, country_code, base_currency, timezone, accounting_basis, industry)
-  values (v_owner, 'Xylo Demo Studio', 'Xylo Demo Studio', 'IN', 'INR', 'Asia/Kolkata', 'accrual', 'Professional services')
-  on conflict do nothing;
+  if not exists (select 1 from public.businesses where owner_id = v_owner and display_name = 'Xylo Demo Studio') then
+    insert into public.businesses (owner_id, display_name, legal_name, country_code, base_currency, timezone, accounting_basis, industry)
+    values (v_owner, 'Xylo Demo Studio', 'Xylo Demo Studio', 'IN', 'INR', 'Asia/Kolkata', 'accrual', 'Professional services');
+  end if;
 
   select id into v_business from public.businesses where owner_id = v_owner and display_name = 'Xylo Demo Studio' order by created_at limit 1;
   if v_business is null then raise exception 'Unable to resolve demo business'; end if;
