@@ -184,7 +184,8 @@ function showAccountingPage(show){
  $('accounting').hidden=!show;
  for(const el of content.children){if(el.id==='accounting')continue;if(el.matches('.hero,.analytics,.section-head,.workspace,.profile-page,.foot'))el.hidden=show}
  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('active',a.id==='accounting-nav'&&show));
- if(show){$('accounting').scrollIntoView({behavior:'smooth',block:'start'});history.replaceState(null,'','#accounting')}
+ document.body.classList.toggle('accounting-open',show);
+ if(show){history.replaceState(null,'','#accounting');$('accounting').scrollIntoView({behavior:'smooth',block:'start'})}
  else history.replaceState(null,'','#');
 }
 function showAccountingPanel(name){document.querySelectorAll('[data-accounting-tab]').forEach(b=>b.classList.toggle('active',b.dataset.accountingTab===name));document.querySelectorAll('[data-accounting-panel]').forEach(p=>p.classList.toggle('active',p.dataset.accountingPanel===name));}
