@@ -223,7 +223,7 @@ declare
   v_credits numeric(18,2);
   v_count integer;
 begin
-  if new.status = 'posted' and (tg_op = 'INSERT' or old.status is distinct from 'posted') then
+  if new.status = 'posted' and (tg_op = 'INSERT' or (tg_op = 'UPDATE' and old.status is distinct from 'posted')) then
     select count(*), coalesce(sum(debit), 0), coalesce(sum(credit), 0)
       into v_count, v_debits, v_credits
       from public.journal_lines
@@ -259,14 +259,26 @@ begin
     if tg_op = 'UPDATE' and old.status = 'posted' then
       raise exception using errcode = '55000', message = 'POSTED_JOURNAL_IMMUTABLE';
     end if;
-    return case when tg_op = 'DELETE' then old else new end;
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
   end if;
 
-  select status into v_status from public.journal_entries where id = coalesce(old.journal_entry_id, new.journal_entry_id);
+  if tg_op = 'INSERT' then
+    select status into v_status from public.journal_entries where id = new.journal_entry_id;
+  elsif tg_op = 'DELETE' then
+    select status into v_status from public.journal_entries where id = old.journal_entry_id;
+  else
+    select status into v_status from public.journal_entries where id = old.journal_entry_id;
+    if v_status = 'posted' then
+      raise exception using errcode = '55000', message = 'POSTED_JOURNAL_LINES_IMMUTABLE';
+    end if;
+    select status into v_status from public.journal_entries where id = new.journal_entry_id;
+  end if;
   if v_status = 'posted' then
     raise exception using errcode = '55000', message = 'POSTED_JOURNAL_LINES_IMMUTABLE';
   end if;
-  return case when tg_op = 'DELETE' then old else new end;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 revoke all on function private.protect_posted_journal() from public, anon, authenticated;
@@ -349,9 +361,10 @@ begin
   if v_invoice_status is distinct from 'draft' then
     raise exception using errcode = '55000', message = 'POSTED_INVOICE_LINES_IMMUTABLE';
   end if;
-  return case when tg_op = 'DELETE' then old else new end;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
-$$;
+$;
 revoke all on function private.guard_sales_invoice_line() from public, anon, authenticated;
 drop trigger if exists sales_invoice_lines_state_guard on public.sales_invoice_lines;
 create trigger sales_invoice_lines_state_guard
