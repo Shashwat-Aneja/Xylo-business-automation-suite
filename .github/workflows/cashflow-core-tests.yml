@@ -1,0 +1,33 @@
+name: Cashflow core tests
+
+on:
+  pull_request:
+    paths:
+      - "backend/accounting_engine/cashflow.py"
+      - "backend/tests/test_cashflow_forecast.py"
+      - ".github/workflows/cashflow-core-tests.yml"
+  push:
+    branches:
+      - feature/xylo-cashflow-phase-2
+    paths:
+      - "backend/accounting_engine/cashflow.py"
+      - "backend/tests/test_cashflow_forecast.py"
+      - ".github/workflows/cashflow-core-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cashflow-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Run deterministic cashflow tests
+        run: python -m pytest -q backend/tests/test_cashflow_forecast.py
