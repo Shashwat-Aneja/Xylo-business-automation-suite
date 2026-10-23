@@ -216,6 +216,7 @@ declare
   v_period_status text;
   v_allocated_invoice numeric(18,2);
   v_allocated_receipt numeric(18,2);
+  v_existing public.invoice_receipt_allocations%rowtype;
   v_allocation_id uuid := gen_random_uuid();
   v_journal_id uuid;
 begin
@@ -235,8 +236,18 @@ begin
   if v_invoice.status <> 'posted' or v_receipt.status <> 'posted' then raise exception using errcode = '55000', message = 'ALLOCATION_REQUIRES_POSTED_INVOICE_AND_RECEIPT'; end if;
   if v_invoice.customer_id <> v_receipt.customer_id then raise exception using errcode = '23514', message = 'CUSTOMER_MISMATCH'; end if;
   if v_invoice.currency_code <> v_receipt.currency_code then raise exception using errcode = '23514', message = 'CROSS_CURRENCY_ALLOCATION_REQUIRES_FX_WORKFLOW'; end if;
-  if exists (select 1 from public.invoice_receipt_allocations where business_id = v_invoice.business_id and idempotency_key = p_idempotency_key) then
-    raise exception using errcode = '23505', message = 'IDEMPOTENCY_KEY_ALREADY_USED';
+  select * into v_existing from public.invoice_receipt_allocations
+    where business_id = v_invoice.business_id and idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.invoice_id <> v_invoice.id or v_existing.receipt_id <> v_receipt.id or v_existing.amount <> p_amount then
+      raise exception using errcode = '23505', message = 'IDEMPOTENCY_KEY_REUSED_FOR_DIFFERENT_ALLOCATION';
+    end if;
+    select coalesce(sum(a.amount),0) into v_allocated_invoice
+      from public.invoice_receipt_allocations a join public.journal_entries je on je.id = a.journal_entry_id and je.status = 'posted'
+      where a.invoice_id = v_invoice.id;
+    return query select v_existing.id, v_existing.journal_entry_id, v_existing.amount,
+      v_invoice.gross_amount - v_allocated_invoice;
+    return;
   end if;
 
   select status into v_period_status from public.accounting_periods
