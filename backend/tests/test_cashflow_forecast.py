@@ -123,3 +123,8 @@ def test_source_warnings_are_preserved_without_duplicates():
 def test_money_rejects_fractional_minor_units():
     with pytest.raises(ValueError, match="fractional minor currency units"):
         money("1.001")
+
+
+def test_money_rejects_amounts_outside_decimal_context_range():
+    with pytest.raises(ValueError, match="supported decimal range"):
+        money("1e100000")
