@@ -4,17 +4,25 @@
 
 - Branch: `feature/xylo-cashflow-phase-2`
 - This phase begins with contract, query boundary, and verification requirements.
-- No migration has been executed against any Supabase project.
-- Production remains unchanged.
+- Source migrations and local-only demo fixtures are committed to this branch; they have not been executed against any Supabase project.
+- The only active Supabase project found is `xylo-production`; there are no development branches. Production remains unchanged.
 - The existing HTML dashboards are prototypes; this document does not claim they are connected to the accounting database.
 - Xylo remains a deterministic bookkeeping and business-operations product. Do not add AI-generated estimates or opaque scoring.
 
 ## Phase 2 outcomes
 
 1. Establish an authenticated, business-scoped read service for recorded cash, receivables, payables, due dates, and a transparent short-term cash forecast.
-2. Add the missing supplier-payment and supplier-bill-allocation lifecycle before treating bills as paid or using them as confirmed forecast outflows.
+2. Add the supplier-payment and supplier-bill-allocation schema and controlled posting RPC before treating bills as paid or using them as confirmed forecast outflows. The first pass now exists in `20261023150000_supplier_payments.sql`; database-level integration tests remain a gate.
 3. Add query-level and database integration tests for business isolation, date boundaries, partial allocations, over-allocation, reversals, closed periods, and currency separation.
 4. Connect the read service to the Cashflow & Dues UI only after staging schema and authorization checks pass.
+
+## Local test data
+
+See `docs/implementation/local-demo-data.md` and `supabase/seed/demo_accounting.sql`. The fixture creates a sample business, chart of accounts, period, customer, supplier, one draft invoice (₹18,000), and one draft supplier bill (₹4,200). It intentionally creates no posted journals and enables no tax/compliance rules. Run it only against a disposable local/dev database after applying the accounting migrations. Do not run it against `xylo-production`.
+
+## Current environment constraint
+
+The connected Supabase account has one active project, `xylo-production`, and no development branches. Older projects are inactive. No data was inserted because the requested test fixture requires the new accounting schema and should not be written to production. A separate disposable local/dev database is needed for an actual seeded runtime test.
 
 ## Domain contracts
 
