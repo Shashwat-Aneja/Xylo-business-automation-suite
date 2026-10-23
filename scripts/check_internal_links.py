@@ -2,8 +2,8 @@
 """Check local href/src targets in Xylo's static HTML pages.
 
 Run from repository root: python scripts/check_internal_links.py
-External URLs, mailto/tel links, data URLs, JS URLs, and pure page fragments are
-excluded from filesystem checks. Directory routes resolve to index.html.
+External URLs and non-navigation schemes are excluded. Same-page fragments are
+checked against the source page IDs; directory routes resolve to index.html.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ ERRORS: list[str] = []
 
 def route_target(value: str, source: Path) -> Path | None:
     value = value.strip()
-    if not value or value.startswith("#") or value.startswith("//"):
+    if not value or value.startswith("//"):
         return None
     parsed = urlsplit(value)
     if parsed.scheme.lower() in {"http", "https", "mailto", "tel", "data", "javascript"}:
