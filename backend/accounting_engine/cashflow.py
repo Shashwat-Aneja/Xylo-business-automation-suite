@@ -13,17 +13,25 @@ from decimal import Decimal, InvalidOperation
 from typing import Iterable, Mapping, Sequence
 
 ZERO = Decimal("0.00")
+CENT = Decimal("0.01")
 
 
 def money(value: object) -> Decimal:
-    """Parse a finite decimal currency amount without binary floating-point math."""
+    """Parse a finite, two-decimal currency amount without binary float math.
+
+    Reject values that cannot be represented at the currency's minor-unit scale,
+    including magnitudes too large for the active Decimal arithmetic context.
+    """
     try:
         amount = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError) as exc:
         raise ValueError("amount must be a valid decimal value") from exc
     if not amount.is_finite():
         raise ValueError("amount must be finite")
-    rounded = amount.quantize(Decimal("0.01"))
+    try:
+        rounded = amount.quantize(CENT)
+    except InvalidOperation as exc:
+        raise ValueError("amount is outside the supported decimal range") from exc
     if amount != rounded:
         raise ValueError("amount cannot contain fractional minor currency units")
     return rounded
@@ -122,7 +130,7 @@ def build_forecast(
             inflow_total = sum((amount for _, amount in incoming), ZERO)
             outflow_total = sum((amount for _, amount in outgoing), ZERO)
             opening_balance = balance
-            balance = (balance + inflow_total - outflow_total).quantize(Decimal("0.01"))
+            balance = (balance + inflow_total - outflow_total).quantize(CENT)
             buckets.append(ForecastBucket(
                 date=bucket_date,
                 currency=currency,
