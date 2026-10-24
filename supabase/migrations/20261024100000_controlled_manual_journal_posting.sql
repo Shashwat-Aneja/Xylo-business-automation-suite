@@ -13,15 +13,12 @@ declare
 begin
   if new.status = 'posted' and
      (tg_op = 'INSERT' or (tg_op = 'UPDATE' and old.status is distinct from 'posted')) then
-    if new.source_document_type in (
-      'sales_invoice','sales_invoice_cancellation','supplier_bill',
-      'supplier_bill_cancellation','cash_receipt','receipt_allocation','manual_journal'
-    ) and (
-      current_setting('xylo.posting_source_type', true) is distinct from new.source_document_type
-      or current_setting('xylo.posting_source_id', true) is distinct from new.source_document_id::text
-    ) then
+    if new.source_document_type is null
+       or new.source_document_id is null
+       or current_setting('xylo.posting_source_type', true) is distinct from new.source_document_type
+       or current_setting('xylo.posting_source_id', true) is distinct from new.source_document_id::text then
       raise exception using errcode = '42501',
-        message = 'SOURCE_DOCUMENTS_MUST_USE_CONTROLLED_POSTING_WORKFLOW';
+        message = 'ALL_JOURNALS_MUST_USE_CONTROLLED_POSTING_WORKFLOW';
     end if;
 
     select count(*), coalesce(sum(debit), 0), coalesce(sum(credit), 0)
