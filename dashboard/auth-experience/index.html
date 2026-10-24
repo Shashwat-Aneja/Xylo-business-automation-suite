@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f3efe6">
+<title>Xylo — Sign in</title>
+<style>
+:root{--paper:#f3efe6;--ivory:#faf8f2;--ink:#24231f;--muted:#77766e;--line:#d7d1c5;--accent:#873f32;--dark:#6e3027}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font:15px/1.6 Arial,Helvetica,sans-serif;display:grid;place-items:center;padding:24px}
+main{width:min(100%,480px);background:var(--ivory);border:1px solid var(--line);padding:clamp(26px,6vw,48px)}
+.brand{font:36px Georgia,serif;letter-spacing:-.08em}.brand span{color:var(--accent)}.eyebrow{margin-top:28px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:clamp(38px,7vw,52px)/1.04 Georgia,serif;font-weight:400;letter-spacing:-.055em;margin:12px 0}.intro{font-size:13px;color:var(--muted);margin:0 0 24px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);margin:22px 0}.tabs button{padding:12px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer}.tabs button[aria-selected=true]{border-bottom-color:var(--accent);color:var(--ink)}
+label{display:block;font-size:11px;margin:17px 0 6px}input{width:100%;padding:12px;border:1px solid var(--line);background:#fffdf8;color:var(--ink);font:13px Arial,sans-serif;border-radius:0}input:focus{outline:2px solid #873f3233;border-color:var(--accent)}
+.primary{margin-top:22px;width:100%;padding:14px 16px;background:var(--accent);border:1px solid var(--accent);color:white;font-size:12px;cursor:pointer}.primary:hover{background:var(--dark)}button:disabled{opacity:.6;cursor:wait}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}.link{padding:0;border:0;background:none;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:11px;cursor:pointer}.notice{display:none;margin-top:18px;padding:12px;border:1px solid var(--line);font-size:12px;overflow-wrap:anywhere}.notice.show{display:block}.notice.error{border-color:#b75a48;color:#873f32}.notice.success{border-color:#8b9a7b;color:#43563b}.fine{font-size:10px;color:var(--muted);line-height:1.7;margin-top:24px}
+</style>
+</head>
+<body><main>
+<div class="brand">Xylo<span>.</span></div><div class="eyebrow">Accounting workspace</div>
+<h1 id="heading">Welcome back.</h1><p class="intro" id="intro">Sign in to continue to your business workspace.</p>
+<div class="tabs" role="tablist" aria-label="Account access"><button type="button" id="tab-signin" role="tab" aria-selected="true">Sign in</button><button type="button" id="tab-signup" role="tab" aria-selected="false">Create account</button></div>
+<form id="auth-form">
+<div id="name-wrap" hidden><label for="full-name">Full name</label><input id="full-name" name="full-name" autocomplete="name" maxlength="120"></div>
+<label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254">
+<div id="password-wrap"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required></div>
+<button class="primary" id="submit" type="submit">Sign in →</button>
+</form>
+<div class="row"><button type="button" class="link" id="forgot">Forgot password?</button><button type="button" class="link" id="back" hidden>Back to sign in</button></div>
+<div class="notice" id="notice" role="status" aria-live="polite"></div>
+<p class="fine">Your account protects your business records. Use the email address associated with your Xylo workspace.</p>
+</main>
+<script type="module">
+const $=id=>document.getElementById(id);
+let supabase,mode='signin';
+const setNotice=(message,type='')=>{const el=$('notice');el.textContent=message;el.className='notice show '+type};
+const clearNotice=()=>{$('notice').textContent='';$('notice').className='notice'};
+function setMode(next){mode=next;clearNotice();$('tab-signin').setAttribute('aria-selected',String(next==='signin'));$('tab-signup').setAttribute('aria-selected',String(next==='signup'));$('name-wrap').hidden=next!=='signup';$('full-name').required=next==='signup';$('password-wrap').hidden=next==='reset';$('password').required=next!=='reset';$('password').autocomplete=next==='signup'?'new-password':'current-password';$('forgot').hidden=next==='signup';$('back').hidden=next!=='reset';$('heading').textContent=next==='signup'?'Create your workspace account.':next==='reset'?'Reset your password.':'Welcome back.';$('intro').textContent=next==='signup'?'Create an account to start managing your business records.':next==='reset'?'We’ll email you a secure password-reset link.':'Sign in to continue to your business workspace.';$('submit').textContent=next==='signup'?'Create account →':next==='reset'?'Send reset link →':'Sign in →'}
+$('tab-signin').addEventListener('click',()=>setMode('signin'));$('tab-signup').addEventListener('click',()=>setMode('signup'));$('forgot').addEventListener('click',()=>setMode('reset'));$('back').addEventListener('click',()=>setMode('signin'));
+$('auth-form').addEventListener('submit',async e=>{e.preventDefault();clearNotice();const btn=$('submit');btn.disabled=true;btn.textContent='Please wait…';const email=$('email').value.trim();const password=$('password').value;try{
+if(!supabase)throw new Error('Secure account service did not initialize. Refresh the page and try again.');
+if(mode==='signin'){const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw new Error('Sign-in did not create a session. Please try again.');setNotice('Signed in. Opening your workspace…','success');location.replace('/');return}
+if(mode==='signup'){const full_name=$('full-name').value.trim();if(!full_name)throw new Error('Enter your full name.');const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name,name:full_name},emailRedirectTo:location.origin+'/'}});if(error)throw error;if(data.session){setNotice('Account created. Opening your workspace…','success');location.replace('/');return}setNotice('Account created. Check your email for a confirmation link. After confirming, return here and sign in.','success');setMode('signin');return}
+const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/auth-experience/'});if(error)throw error;setNotice('If an account exists for this address, a password-reset email has been sent.','success');
+}catch(err){setNotice(err?.message||'Could not complete that request. Please try again.','error')}finally{btn.disabled=false;btn.textContent=mode==='signup'?'Create account →':mode==='reset'?'Send reset link →':'Sign in →'}
+});
+try{const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0');supabase=createClient('https://boyrzfcwmmyvttyhvrmy.supabase.co','sb_publishable_K0a52f-U9xm65-xBYCFgFQ_WW9GZWQ4');const {data:{session},error}=await supabase.auth.getSession();if(error)throw error;if(session){location.replace('/');}}catch(err){setNotice('Could not connect to the secure account service. Check your connection and refresh. '+(err?.message||''),'error')}
+</script></body></html>

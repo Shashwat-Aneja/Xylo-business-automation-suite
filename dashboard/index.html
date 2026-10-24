@@ -304,10 +304,14 @@ async function saveAccountingJournal(e){
   const lines=[...$('acct-journal-lines').querySelectorAll('.accounting-line-entry')].map(row=>({account_id:row.querySelector('[name="account_id"]').value,description:row.querySelector('[name="line_description"]').value.trim()||null,debit:Number(row.querySelector('[name="debit"]').value)||0,credit:Number(row.querySelector('[name="credit"]').value)||0}));
   const debit=lines.reduce((s,l)=>s+l.debit,0),credit=lines.reduce((s,l)=>s+l.credit,0);
   if(lines.length<2||lines.some(l=>(l.debit>0)===(l.credit>0))||Math.abs(debit-credit)>.005||debit<=0)throw new Error('Add at least two valid lines and ensure total debits equal total credits.');
-  const {data:entry,error}=await supabase.from('journal_entries').insert({business_id:acctBusinessId,entry_date:$('acct-entry-date').value,reference:$('acct-entry-reference').value.trim()||null,description:$('acct-entry-description').value.trim(),status:'draft'}).select().single();if(error)throw error;
-  const inserted=await supabase.from('journal_lines').insert(lines.map(l=>({...l,journal_entry_id:entry.id})));if(inserted.error){await supabase.from('journal_entries').delete().eq('id',entry.id);throw inserted.error}
-  const posted=await supabase.from('journal_entries').update({status:'posted',posted_at:new Date().toISOString()}).eq('id',entry.id);if(posted.error)throw posted.error;
-  acctMessage('acct-journal-message','Journal entry posted. Debits and credits balance.');$('acct-journal-form').reset();$('acct-journal-lines').replaceChildren();$('acct-journal-form-wrap').hidden=true;await loadAccountingData();
+  const {data:entry,error}=await supabase.from('journal_entries').insert({business_id:acctBusinessId,entry_date:$('acct-entry-date').value,reference:$('acct-entry-reference').value.trim()||null,description:$('acct-entry-description').value.trim(),status:'draft'}).select().single();
+  if(error)throw error;
+  const inserted=await supabase.from('journal_lines').insert(lines.map(l=>({...l,journal_entry_id:entry.id})));
+  if(inserted.error){await supabase.from('journal_entries').delete().eq('id',entry.id);throw inserted.error}
+  const {error:postError}=await supabase.rpc('post_manual_journal_entry',{p_journal_entry_id:entry.id,p_idempotency_key:crypto.randomUUID()});
+  if(postError)throw new Error('Draft saved but not posted: '+postError.message);
+  acctMessage('acct-journal-message','Journal entry posted through the accounting controls. Debits and credits balance.');
+  $('acct-journal-form').reset();$('acct-journal-lines').replaceChildren();$('acct-journal-form-wrap').hidden=true;await loadAccountingData();
  }catch(err){acctMessage('acct-journal-message',err.message||'Could not save journal entry.')}finally{btn.disabled=false}
 }
 async function saveAccountingAccount(e){
