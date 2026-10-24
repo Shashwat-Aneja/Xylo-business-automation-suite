@@ -1,3 +1,13 @@
 {
-  "outputDirectory": "dashboard"
+  "outputDirectory": "dashboard",
+  "rewrites": [
+    {
+      "source": "/auth-experience",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth-experience/:path*",
+      "destination": "/index.html"
+    }
+  ]
 }
