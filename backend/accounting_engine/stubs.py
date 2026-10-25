@@ -14,10 +14,9 @@ for production use.
 """
 
 import math
-import math
 import sqlite3
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import List, Dict, Any, Optional
 import uuid
 import os
@@ -156,8 +155,6 @@ def create_transaction(user_id: Optional[str], amount: float, description: str, 
     """
     if not math.isfinite(float(amount)):
         raise ValueError("Transaction amount must be a finite number.")
-    if not math.isfinite(float(amount)):
-        raise ValueError("Transaction amount must be a finite number.")
     _ensure_schema()
     tx_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
@@ -179,12 +176,51 @@ def create_journal_entry(transaction_id: Optional[str], entry_date: str, descrip
     'lines' should be a list of dicts: {"account_code": "1000", "debit": 100.0, "credit": 0.0}
     Returns journal_entry_id.
     """
-    _ensure_schema()
-    # validate that debits == credits
-    total_debit = sum([_decimal(l.get("debit", 0)) for l in lines])
-    total_credit = sum([_decimal(l.get("credit", 0)) for l in lines])
+    # Validate and normalize every line before opening a database transaction.
+    # This prevents malformed or non-finite values from being persisted.
+    if not isinstance(lines, list) or len(lines) < 2:
+        raise ValueError("A journal entry must contain at least two lines.")
+
+    normalized_lines = []
+    for index, line in enumerate(lines, start=1):
+        if not isinstance(line, dict):
+            raise ValueError(f"Journal line {index} must be a mapping.")
+        account_code = line.get("account_code")
+        if not isinstance(account_code, str) or not account_code.strip():
+            raise ValueError(f"Journal line {index} requires an account_code.")
+
+        normalized_amounts = {}
+        for field in ("debit", "credit"):
+            try:
+                value = Decimal(str(line.get(field, 0)))
+            except (InvalidOperation, TypeError, ValueError):
+                raise ValueError(f"Journal line {index} {field} must be a valid amount.")
+            if not value.is_finite():
+                raise ValueError(f"Journal line {index} {field} must be finite.")
+            if value < 0:
+                raise ValueError(f"Journal line {index} {field} cannot be negative.")
+            normalized_amounts[field] = _decimal(value)
+
+        debit = normalized_amounts["debit"]
+        credit = normalized_amounts["credit"]
+        if debit == 0 and credit == 0:
+            raise ValueError(f"Journal line {index} must have a positive debit or credit.")
+        if debit > 0 and credit > 0:
+            raise ValueError(f"Journal line {index} cannot contain both debit and credit.")
+
+        normalized_lines.append({
+            "account_code": account_code.strip(),
+            "debit": debit,
+            "credit": credit,
+        })
+
+    total_debit = sum((line["debit"] for line in normalized_lines), Decimal("0.00"))
+    total_credit = sum((line["credit"] for line in normalized_lines), Decimal("0.00"))
     if total_debit != total_credit:
         raise ValueError(f"Debits ({total_debit}) do not equal Credits ({total_credit}). Journal entry rejected.")
+
+    lines = normalized_lines
+    _ensure_schema()
 
     je_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
