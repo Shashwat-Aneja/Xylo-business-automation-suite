@@ -149,21 +149,24 @@ def seed_default_accounts():
     conn.close()
 
 
-def create_transaction(user_id: Optional[str], amount: float, description: str, source: str = "manual", reference: Optional[str] = None) -> str:
+def create_transaction(user_id: Optional[str], amount: float, description: str, source: str = "manual", reference: Optional[str] = None, transaction_date: Optional[datetime] = None) -> str:
     """
     Create a raw transaction record (source). Returns transaction_id.
     """
     if not math.isfinite(float(amount)):
         raise ValueError("Transaction amount must be a finite number.")
+    if transaction_date is not None and not isinstance(transaction_date, datetime):
+        raise ValueError("transaction_date must be a datetime when provided.")
     _ensure_schema()
     tx_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
+    transaction_day = (transaction_date or datetime.utcnow()).date().isoformat()
     conn = _get_conn()
     cur = conn.cursor()
     cur.execute(
         """INSERT INTO transactions(id, user_id, source, reference, date, amount, currency, description, created_at, processed)
            VALUES (?,?,?,?,?,?,?,?,?,0)""",
-        (tx_id, user_id, source, reference, datetime.utcnow().date().isoformat(), float(amount), "INR", description, created_at),
+        (tx_id, user_id, source, reference, transaction_day, float(amount), "INR", description, created_at),
     )
     conn.commit()
     conn.close()

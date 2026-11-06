@@ -8,6 +8,7 @@ It isolates the accounting implementation (stubs or full engine) so the API stay
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import math
 import backend.accounting_engine.stubs as acct
 import csv
 import io
@@ -72,30 +73,72 @@ def get_balance_sheet(as_of: Optional[str] = None) -> Dict[str, Any]:
 
 def import_transactions_from_csv_bytes(csv_bytes: bytes, user_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    Import transactions from uploaded CSV content (bytes), create transactions, and optionally post them.
-    Returns a summary of created transaction IDs.
-    Expected CSV headers: date,description,amount,currency,source,reference
+    Import dated transactions from UTF-8 CSV bytes.
+
+    Required headers: date, amount
+    Optional headers: description, currency, source, reference
+
+    Invalid rows are reported with their CSV line number and do not stop later
+    valid rows from being imported. Database errors still propagate to callers.
     """
-    text = csv_bytes.decode("utf-8")
-    reader = csv.DictReader(io.StringIO(text))
+    try:
+        text = csv_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("CSV content must be UTF-8 encoded.") from exc
+
+    reader = csv.DictReader(io.StringIO(text, newline=""))
+    if not reader.fieldnames:
+        raise ValueError("CSV must include a header row.")
+
+    headers = [header.strip().lower() if isinstance(header, str) else "" for header in reader.fieldnames]
+    if any(not header for header in headers) or len(set(headers)) != len(headers):
+        raise ValueError("CSV headers must be non-empty and unique.")
+    reader.fieldnames = headers
+
+    missing_headers = {"date", "amount"}.difference(headers)
+    if missing_headers:
+        raise ValueError(f"CSV is missing required headers: {', '.join(sorted(missing_headers))}.")
+
     created = []
-    for row in reader:
+    skipped_rows = []
+    for line_number, row in enumerate(reader, start=2):
         try:
-            date_str = row.get("date") or datetime.utcnow().date().isoformat()
-            date = datetime.fromisoformat(date_str) if "T" in date_str else datetime.fromisoformat(date_str + "T00:00:00")
-            amount = float(row.get("amount", "0") or "0")
-            description = row.get("description") or ""
-            source = row.get("source") or "csv_import"
-            reference = row.get("reference")
-            tx_id = acct.create_transaction(user_id=user_id, amount=amount, description=description, source=source, reference=reference)
-            created.append(tx_id)
-        except Exception as e:
-            # skip malformed rows but continue
-            print(f"[adapter_accounting] skipping row due to error: {e}")
+            if None in row:
+                raise ValueError("row contains more values than the header.")
+            date_text = (row.get("date") or "").strip()
+            if not date_text:
+                raise ValueError("date is required.")
+            transaction_date = datetime.fromisoformat(date_text.replace("Z", "+00:00"))
+
+            amount_text = (row.get("amount") or "").strip()
+            if not amount_text:
+                raise ValueError("amount is required.")
+            amount = float(amount_text)
+            if not math.isfinite(amount):
+                raise ValueError("amount must be a finite number.")
+
+            description = (row.get("description") or "").strip()
+            source = (row.get("source") or "").strip() or "csv_import"
+            reference = (row.get("reference") or "").strip() or None
+        except (ValueError, TypeError, OverflowError) as exc:
+            skipped_rows.append({"row": line_number, "error": str(exc)})
             continue
 
-    return {"created_transactions": created, "count": len(created)}
+        tx_id = acct.create_transaction(
+            user_id=user_id,
+            amount=amount,
+            description=description,
+            source=source,
+            reference=reference,
+            transaction_date=transaction_date,
+        )
+        created.append(tx_id)
 
+    return {
+        "created_transactions": created,
+        "count": len(created),
+        "skipped_rows": skipped_rows,
+    }
 
 # Expose a small convenience to be used by API main
 __all__ = [
