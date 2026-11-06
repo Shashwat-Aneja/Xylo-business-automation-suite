@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -58,3 +59,26 @@ def test_csv_import_rejects_duplicate_headers(isolated_database):
         adapter.import_transactions_from_csv_bytes(
             b"date,amount,amount\n2026-10-03,10,20\n"
         )
+
+
+
+def test_manual_transaction_and_journal_share_the_requested_date(isolated_database):
+    result = adapter.create_transaction_and_post(
+        user_id="user-1",
+        date=datetime(2026, 10, 5),
+        amount=50.00,
+        description="Dated sale",
+    )
+
+    with sqlite3.connect(isolated_database) as connection:
+        transaction_date = connection.execute(
+            "SELECT date FROM transactions WHERE id = ?",
+            (result["transaction_id"],),
+        ).fetchone()[0]
+        journal_date = connection.execute(
+            "SELECT entry_date FROM journal_entries WHERE id = ?",
+            (result["journal_entry_id"],),
+        ).fetchone()[0]
+
+    assert transaction_date == "2026-10-05"
+    assert journal_date == "2026-10-05"
