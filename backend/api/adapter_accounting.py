@@ -31,7 +31,7 @@ def create_transaction_and_post(
     For demo purposes: posts a simple debit to Bank (1100) and credit to Sales (4000) when amount > 0.
     Replace this logic with the production rules engine later.
     """
-    tx_id = acct.create_transaction(user_id=user_id, amount=amount, description=description or "", source=source, reference=reference)
+    tx_id = acct.create_transaction(user_id=user_id, amount=amount, description=description or "", source=source, reference=reference, transaction_date=date)
 
     # Build a simple journal entry: Debit Bank (1100) / Credit Sales (4000)
     entry_date = date.date().isoformat()
