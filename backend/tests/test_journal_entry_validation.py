@@ -77,3 +77,23 @@ def test_valid_balanced_entry_is_persisted(isolated_database):
 
     assert row == (entry_id, "balanced")
     assert line_count == 2
+
+
+@pytest.mark.parametrize(
+    "entry_date",
+    ["2026-13-01", "2026-02-30", "2026-1-01", "not-a-date", None, "2026-01-01T00:00:00"],
+)
+def test_invalid_journal_dates_are_rejected_before_persistence(
+    isolated_database, entry_date
+):
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        accounting.create_journal_entry(
+            transaction_id=None,
+            entry_date=entry_date,
+            description="invalid date",
+            lines=balanced_lines(),
+        )
+
+    with sqlite3.connect(isolated_database) as connection:
+        count = connection.execute("SELECT COUNT(*) FROM journal_entries").fetchone()[0]
+    assert count == 0
