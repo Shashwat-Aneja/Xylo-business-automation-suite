@@ -179,6 +179,17 @@ def create_journal_entry(transaction_id: Optional[str], entry_date: str, descrip
     'lines' should be a list of dicts: {"account_code": "1000", "debit": 100.0, "credit": 0.0}
     Returns journal_entry_id.
     """
+    # Reporting periods are compared lexicographically in SQL, so require
+    # one canonical ISO date before any journal data can be persisted.
+    if not isinstance(entry_date, str):
+        raise ValueError("entry_date must be a valid YYYY-MM-DD date.")
+    try:
+        parsed_entry_date = datetime.strptime(entry_date, "%Y-%m-%d")
+    except ValueError:
+        raise ValueError("entry_date must be a valid YYYY-MM-DD date.")
+    if parsed_entry_date.date().isoformat() != entry_date:
+        raise ValueError("entry_date must be a valid YYYY-MM-DD date.")
+
     # Validate and normalize every line before opening a database transaction.
     # This prevents malformed or non-finite values from being persisted.
     if not isinstance(lines, list) or len(lines) < 2:
